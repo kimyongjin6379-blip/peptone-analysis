@@ -525,9 +525,9 @@
                 const is3DChart = chartId.includes('3d');
                 let newMarkerSize;
                 if (isMobile) {
-                    newMarkerSize = is3DChart ? 6 : 12;  // 3D는 작게, 2D는 크게
+                    newMarkerSize = is3DChart ? 3 : 10;  // 3D는 작게, 2D는 크게
                 } else {
-                    newMarkerSize = is3DChart ? 5 : 10;
+                    newMarkerSize = is3DChart ? 3 : 8;
                 }
 
                 Plotly.relayout(chartId, updateLayout);
@@ -567,3 +567,4 @@
 </body>
 
 </html>
+
