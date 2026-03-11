@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>펩톤 성분 분석 리포트 (nMDS)</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+        }
+        .header-logo {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            max-height: 60px;
+            max-width: 120px;
+        }
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        .method-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .stat-box {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-box .number { font-size: 2em; font-weight: bold; }
+        .stat-box .label { font-size: 0.9em; opacity: 0.9; }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 1000px) {
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+
+        .chart-container {
+            min-height: 450px;
+        }
+
+        .cluster-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .cluster-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            transition: transform 0.3s;
+        }
+        .cluster-card:hover { transform: translateY(-5px); }
+        .cluster-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .cluster-badge {
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        .sample-count {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .info-row {
+            margin-bottom: 10px;
+            color: #555;
+        }
+        .top-components {
+            margin-top: 15px;
+        }
+        .component {
+            display: flex;
+            justify-content: space-between;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+        .comp-name { color: #2c3e50; font-weight: 500; }
+        .z-score {
+            color: #e74c3c;
+            font-weight: bold;
+            background: #ffeaea;
+            padding: 2px 8px;
+            border-radius: 5px;
+        }
+
+        .summary-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+        }
+        .summary-section h3 {
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .summary-item {
+            background: rgba(255,255,255,0.2);
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .qr-section {
+            text-align: center;
+            padding: 30px;
+        }
+        .qr-section img {
+            border: 3px solid #eee;
+            border-radius: 15px;
+            padding: 10px;
+            background: white;
+            max-width: 250px;
+        }
+        .qr-section p {
+            margin-top: 15px;
+            color: #666;
+        }
+
+        /* 대체 제품 매핑 스타일 */
+        .mapping-section {
+            margin-top: 20px;
+        }
+        .mapping-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .mapping-section h3 .icon {
+            font-size: 1.2em;
+        }
+        .mapping-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
+        .mapping-table th {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .mapping-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .mapping-table tr:hover {
+            background: #f8f9fa;
+        }
+        .mapping-table .target-product {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .mapping-table .sempio-product {
+            color: #27ae60;
+            font-weight: 600;
+        }
+        .mapping-table .distance {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        .mapping-table .distance.far {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+        .mapping-table .raw-material {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        .mapping-note {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 10px 10px 0;
+            color: #1565c0;
+        }
+        .mapping-note.warning {
+            background: #fff8e1;
+            border-left-color: #ff9800;
+            color: #e65100;
+        }
+        .mapping-note.special {
+            background: #f3e5f5;
+            border-left-color: #9c27b0;
+            color: #6a1b9a;
+        }
+        .sub-recommendations {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            padding: 20px;
+            opacity: 0.8;
+        }
+
+        /* 모바일 최적화 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .header {
+                padding: 20px 15px;
+                padding-top: 70px;
+            }
+            .header-logo {
+                top: 10px;
+                right: 10px;
+                max-height: 50px;
+                max-width: 100px;
+            }
+            .header h1 {
+                font-size: 1.5em;
+            }
+            .header .subtitle {
+                font-size: 0.95em;
+            }
+            .stats-row {
+                gap: 10px;
+            }
+            .stat-box {
+                padding: 10px 20px;
+                min-width: 80px;
+            }
+            .stat-box .number {
+                font-size: 1.5em;
+            }
+            .stat-box .label {
+                font-size: 0.8em;
+            }
+            .card {
+                padding: 15px;
+                border-radius: 15px;
+            }
+            .card h2 {
+                font-size: 1.2em;
+                margin-bottom: 15px;
+            }
+            .charts-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .chart-container {
+                min-height: 350px;
+                width: 100%;
+                overflow-x: auto;
+            }
+            .chart-container > div {
+                min-width: 100%;
+            }
+            .cluster-cards {
+                grid-template-columns: 1fr;
+            }
+            .cluster-card {
+                padding: 15px;
+            }
+            .summary-section {
+                padding: 15px;
+            }
+            .qr-section {
+                padding: 20px;
+            }
+            .qr-section img {
+                max-width: 180px;
+            }
+            .mapping-table {
+                font-size: 0.85em;
+            }
+            .mapping-table th,
+            .mapping-table td {
+                padding: 8px 10px;
+            }
+            .mapping-table .sub-recommendations {
+                font-size: 0.8em;
+            }
+            .mapping-note {
+                padding: 12px;
+                font-size: 0.9em;
+            }
+        }
+
+        /* 더 작은 모바일 화면 */
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+            .header {
+                padding: 15px 10px;
+                padding-top: 65px;
+                border-radius: 15px;
+            }
+            .header h1 {
+                font-size: 1.3em;
+            }
+            .stat-box {
+                padding: 8px 12px;
+            }
+            .stat-box .number {
+                font-size: 1.3em;
+            }
+            .chart-container {
+                min-height: 300px;
+            }
+            .card {
+                padding: 12px;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>펩톤 성분 분석 리포트</h1>
+            <p class="subtitle">nMDS (non-metric Multidimensional Scaling) & K-Means Clustering Analysis</p>
+            <div class="method-badge">Bray-Curtis Distance</div>
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="number">53</div>
+                    <div class="label">총 샘플 수</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number">4</div>
+                    <div class="label">클러스터 수</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number">0.146</div>
+                    <div class="label">2D Stress</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number">0.083</div>
+                    <div class="label">3D Stress</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>클러스터 기준 nMDS 분석</h2>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div id="chart_3d_cluster"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="chart_2d_cluster"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>원료(Raw Material) 기준 nMDS 분석</h2>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div id="chart_3d_raw_material"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="chart_2d_raw_material"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>제조사(Manufacturer) 기준 nMDS 분석</h2>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div id="chart_3d_manufacturer"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="chart_2d_manufacturer"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>제품유형(Material Type) 기준 nMDS 분석</h2>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div id="chart_3d_material_type"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="chart_2d_material_type"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>클러스터별 샘플 분포</h2>
+            <div id="chart_bar"></div>
+        </div>
+
+        <div class="card">
+            <h2>클러스터 특성 분석 (Z-score)</h2>
+            <div class="cluster-cards">
+                
+        <div class="cluster-card" style="border-left: 5px solid #E74C3C;">
+            <div class="cluster-header">
+                <span class="cluster-badge" style="background: #E74C3C;">Cluster 0</span>
+                <span class="sample-count">20개 샘플</span>
+            </div>
+            <div class="cluster-body">
+                <div class="info-row">
+                    <strong>원료:</strong> soy, wheat, pea, rice, casein...
+                </div>
+                <div class="info-row">
+                    <strong>샘플:</strong> SOY-1, SOY-N+, SOY-L...
+                </div>
+                <div class="top-components">
+                    <strong>특이 성분 (Z-score 상위):</strong>
+                    <div class="component"><span class="comp-name">mw pct lt250Da (mw)</span><span class="z-score">Z=1.05</span></div><div class="component"><span class="comp-name">mw pct 250 500Da (mw)</span><span class="z-score">Z=1.04</span></div><div class="component"><span class="comp-name">reducing sugar (general)</span><span class="z-score">Z=0.84</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="cluster-card" style="border-left: 5px solid #3498DB;">
+            <div class="cluster-header">
+                <span class="cluster-badge" style="background: #3498DB;">Cluster 1</span>
+                <span class="sample-count">10개 샘플</span>
+            </div>
+            <div class="cluster-body">
+                <div class="info-row">
+                    <strong>원료:</strong> fish, pork, malt, cotton, rice
+                </div>
+                <div class="info-row">
+                    <strong>샘플:</strong> Fish Collagen, Pork peptoneC1, Pork peptoneC3...
+                </div>
+                <div class="top-components">
+                    <strong>특이 성분 (Z-score 상위):</strong>
+                    <div class="component"><span class="comp-name">Hydroxyproline (taa)</span><span class="z-score">Z=1.51</span></div><div class="component"><span class="comp-name">mw pct gt1000Da (mw)</span><span class="z-score">Z=1.46</span></div><div class="component"><span class="comp-name">Glycine (taa)</span><span class="z-score">Z=1.45</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="cluster-card" style="border-left: 5px solid #2ECC71;">
+            <div class="cluster-header">
+                <span class="cluster-badge" style="background: #2ECC71;">Cluster 2</span>
+                <span class="sample-count">11개 샘플</span>
+            </div>
+            <div class="cluster-body">
+                <div class="info-row">
+                    <strong>원료:</strong> soy, yeast, beef
+                </div>
+                <div class="info-row">
+                    <strong>샘플:</strong> SOY-P, LPS Soy peptone, Solko soypeptone...
+                </div>
+                <div class="top-components">
+                    <strong>특이 성분 (Z-score 상위):</strong>
+                    <div class="component"><span class="comp-name">Leucine (faa)</span><span class="z-score">Z=-1.03</span></div><div class="component"><span class="comp-name">Valine (faa)</span><span class="z-score">Z=-1.02</span></div><div class="component"><span class="comp-name">Isoleucine (faa)</span><span class="z-score">Z=-1.00</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="cluster-card" style="border-left: 5px solid #9B59B6;">
+            <div class="cluster-header">
+                <span class="cluster-badge" style="background: #9B59B6;">Cluster 3</span>
+                <span class="sample-count">12개 샘플</span>
+            </div>
+            <div class="cluster-body">
+                <div class="info-row">
+                    <strong>원료:</strong> yeast, soy, casein
+                </div>
+                <div class="info-row">
+                    <strong>샘플:</strong> NuCel 816 PW, NuCel 751 MG, LPS Yeast extract...
+                </div>
+                <div class="top-components">
+                    <strong>특이 성분 (Z-score 상위):</strong>
+                    <div class="component"><span class="comp-name">Glutamic acid (faa)</span><span class="z-score">Z=1.56</span></div><div class="component"><span class="comp-name">Alanine (faa)</span><span class="z-score">Z=1.47</span></div><div class="component"><span class="comp-name">Methionine (faa)</span><span class="z-score">Z=1.30</span></div>
+                </div>
+            </div>
+        </div>
+        
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="summary-section">
+                <h3>분석 요약 리포트</h3>
+                <p class="summary-item"><strong>그룹 0</strong>은(는) 다른 그룹에 비해 [mw pct lt250Da], [mw pct 250 500Da], [general reducing sugar]가 통계적으로 매우 높게 나타납니다.</p><p class="summary-item"><strong>그룹 1</strong>은(는) 다른 그룹에 비해 [taa Hydroxyproline], [mw pct gt1000Da], [taa Glycine]가 통계적으로 매우 높게 나타납니다.</p><p class="summary-item"><strong>그룹 2</strong>은(는) 다른 그룹에 비해 [faa Leucine], [faa Valine], [faa Isoleucine]가 통계적으로 매우 높게 나타납니다.</p><p class="summary-item"><strong>그룹 3</strong>은(는) 다른 그룹에 비해 [faa Glutamic acid], [faa Alanine], [faa Methionine]가 통계적으로 매우 높게 나타납니다.</p>
+            </div>
+        </div>
+
+        <!-- 대체 제품 매핑 섹션 -->
+        <div class="card">
+            <h2>Sempio 대체 제품 매핑 분석 (nMDS 거리 기반)</h2>
+
+            <div class="mapping-section">
+                <h3><span class="icon">🔬</span> 재조합단백질 생산용 제품 대체 (동물성 대체)</h3>
+                <p class="mapping-note">
+                    nMDS 분석 기반 Bray-Curtis 거리를 활용하여 Himedia, Gibco 등 재조합단백질 생산에 사용되는 제품들과
+                    성분 조성이 가장 유사한 Sempio 제품을 매핑하였습니다. 거리가 가까울수록 성분 프로파일이 유사합니다.
+                </p>
+                <table class="mapping-table">
+                    <thead>
+                        <tr>
+                            <th>대상 제품</th>
+                            <th>제조사</th>
+                            <th>Sempio 대체 추천</th>
+                            <th>nMDS 거리</th>
+                            <th>원료</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+        <tr>
+            <td class="target-product">Himedia No.1</td>
+            <td>Himedia</td>
+            <td class="sempio-product">SOY-N+</td>
+            <td><span class="distance ">0.148</span></td>
+            <td class="raw-material">plant → soy</td>
+        </tr>
+        <tr>
+            <td colspan="5" class="sub-recommendations">2순위: SOY-BIO N50 (0.165), PPR Type3 (0.211)</td>
+        </tr>
+        
+        <tr>
+            <td class="target-product">Himedia No.2</td>
+            <td>Himedia</td>
+            <td class="sempio-product">SOY-BIO N50</td>
+            <td><span class="distance ">0.072</span></td>
+            <td class="raw-material">plant → soy</td>
+        </tr>
+        <tr>
+            <td colspan="5" class="sub-recommendations">2순위: SOY-N+ (0.080), PPR Type3 (0.151)</td>
+        </tr>
+        
+        <tr>
+            <td class="target-product">Gibco SOY100</td>
+            <td>Thermofisher Gibco</td>
+            <td class="sempio-product">SOY-L</td>
+            <td><span class="distance ">0.138</span></td>
+            <td class="raw-material">soy → soy</td>
+        </tr>
+        <tr>
+            <td colspan="5" class="sub-recommendations">2순위: PPR Type3 (0.170), SOY-1 (0.184)</td>
+        </tr>
+        
+        <tr>
+            <td class="target-product">Gibco Soytone</td>
+            <td>Thermofisher Gibco</td>
+            <td class="sempio-product">SOY-BIO</td>
+            <td><span class="distance ">0.047</span></td>
+            <td class="raw-material">soy → soy</td>
+        </tr>
+        <tr>
+            <td colspan="5" class="sub-recommendations">2순위: SOY-1 (0.064), PPR Type3 (0.073)</td>
+        </tr>
+        
+        <tr>
+            <td class="target-product">LPS Soy peptone</td>
+            <td>LPS</td>
+            <td class="sempio-product">SOY-P</td>
+            <td><span class="distance ">0.641</span></td>
+            <td class="raw-material">soy → soy</td>
+        </tr>
+        <tr>
+            <td colspan="5" class="sub-recommendations">2순위: SOY-1 (0.847), PPR Type2 (0.892)</td>
+        </tr>
+        
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mapping-section">
+                <h3><span class="icon">🍺</span> 효모추출물(Yeast Extract) 대체 매핑</h3>
+                <p class="mapping-note warning">
+                    효모추출물은 독특한 성분 프로파일(높은 유리아미노산, 비타민B군)을 가지고 있어
+                    식물성 펩톤과의 nMDS 거리가 상대적으로 큽니다. 아래는 Sempio 제품 중 가장 유사한 대안입니다.
+                </p>
+                <table class="mapping-table">
+                    <thead>
+                        <tr>
+                            <th>대상 제품</th>
+                            <th>제조사</th>
+                            <th>Sempio 대체 추천</th>
+                            <th>nMDS 거리</th>
+                            <th>비고</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+        <tr>
+            <td class="target-product">NuCel 816 PW</td>
+            <td>Procelys</td>
+            <td class="sempio-product">RICE-BIO</td>
+            <td><span class="distance ">0.477</span></td>
+            <td class="raw-material">yeast → rice</td>
+        </tr>
+        
+        <tr>
+            <td class="target-product">NuCel 751 MG</td>
+            <td>Procelys</td>
+            <td class="sempio-product">RICE-BIO</td>
+            <td><span class="distance ">0.395</span></td>
+            <td class="raw-material">yeast → rice</td>
+        </tr>
+        
+        <tr>
+            <td class="target-product">LPS Yeast extract</td>
+            <td>LPS</td>
+            <td class="sempio-product">RICE-BIO</td>
+            <td><span class="distance ">0.458</span></td>
+            <td class="raw-material">yeast → rice</td>
+        </tr>
+        
+        <tr>
+            <td class="target-product">FNI100</td>
+            <td>Lallemand</td>
+            <td class="sempio-product">RICE-BIO</td>
+            <td><span class="distance ">0.668</span></td>
+            <td class="raw-material">yeast → rice</td>
+        </tr>
+        
+        <tr>
+            <td class="target-product">FNI800</td>
+            <td>Lallemand</td>
+            <td class="sempio-product">RICE-1</td>
+            <td><span class="distance ">0.974</span></td>
+            <td class="raw-material">yeast → rice</td>
+        </tr>
+        
+        <tr>
+            <td class="target-product">Gistex LS Ferm</td>
+            <td>DSM</td>
+            <td class="sempio-product">RICE-BIO</td>
+            <td><span class="distance ">0.642</span></td>
+            <td class="raw-material">yeast → rice</td>
+        </tr>
+        
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mapping-section">
+                <h3><span class="icon">⚡</span> 특이 케이스: YP180 (효모 유래 Peptone)</h3>
+                <p class="mapping-note special">
+                    <strong>YP180 (Angel Yeast)</strong>은 효모(yeast)를 원료로 하지만, 가수분해 공정을 통해
+                    <strong>Peptone 형태</strong>로 가공된 제품입니다. 일반적인 효모추출물(Yeast Extract)과 달리
+                    Peptone 특성을 가지므로 Sempio의 식물성 펩톤과의 유사도가 상대적으로 높습니다.
+                </p>
+                <table class="mapping-table">
+                    <thead>
+                        <tr>
+                            <th>제품</th>
+                            <th>원료</th>
+                            <th>제품 유형</th>
+                            <th>Sempio 유사 제품</th>
+                            <th>nMDS 거리</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+        <tr>
+            <td class="target-product">YP180</td>
+            <td>yeast (효모)</td>
+            <td>Peptone</td>
+            <td class="sempio-product">SOY-P</td>
+            <td><span class="distance ">1.037</span></td>
+        </tr>
+        <tr>
+            <td colspan="5" class="sub-recommendations">
+                2순위: SOY-1 (1.150), SOY-L (1.162)<br>
+                → 효모 유래이지만 Peptone 가공 제품으로, 일반 Yeast Extract보다 Sempio 제품과의 거리가 가까움
+            </td>
+        </tr>
+        
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mapping-note">
+                <strong>📊 해석 가이드 (nMDS 거리 기준):</strong><br>
+                • nMDS 거리 < 0.5: 매우 유사한 성분 프로파일 (직접 대체 가능성 높음)<br>
+                • nMDS 거리 0.5~1.0: 유사한 성분 프로파일 (조건부 대체 검토)<br>
+                • nMDS 거리 > 1.0: 성분 차이가 큼 (대체 시 추가 검증 필요)<br>
+                <br>
+                <strong>※ Stress 값 해석:</strong> 2D=0.146, 3D=0.083 (0.1 이하: 우수, 0.1~0.2: 양호)
+            </div>
+        </div>
+
+        <!-- 배합 최적화 추천 섹션 -->
+        <div class="card">
+            <h2>🧪 Sempio 제품 배합 최적화 추천</h2>
+
+            <div class="mapping-note" style="background: #e8f5e9; border-left-color: #4caf50; color: #1b5e20;">
+                <strong>배합 최적화란?</strong><br>
+                Sempio 제품 2개를 특정 비율로 혼합하면, 단일 제품보다 타겟 제품에 더 가까운 성분 프로파일을 만들 수 있습니다.
+                아래는 nMDS 좌표 기반 선형 보간으로 계산한 최적 배합 비율입니다.<br>
+                <em>※ 실제 적용 시 배합 테스트를 통한 검증을 권장합니다.</em>
+            </div>
+
+            <table class="mapping-table">
+                <thead>
+                    <tr>
+                        <th>대상 제품</th>
+                        <th>단일 최적</th>
+                        <th>단일 거리</th>
+                        <th>배합 추천</th>
+                        <th>배합 거리</th>
+                        <th>개선율</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+            <tr>
+                <td class="target-product">Himedia No.1</td>
+                <td>SOY-N+</td>
+                <td><span class="distance">0.148</span></td>
+                <td class="sempio-product">SOY-1 (50%) + WHEAT-BIO (50%)</td>
+                <td><span class="distance" style="background:#c8e6c9; color:#2e7d32;">0.020</span></td>
+                <td><span style="color:#27ae60; font-weight:bold;">▼ 86.7%</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 배합: PEA-BIO 70% + PPR Type2 30% (거리: 0.020, ▼86.5%) / SOY-P 30% + WHEAT-BIO 70% (거리: 0.021, ▼86.1%)</td>
+            </tr>
+            
+            <tr>
+                <td class="target-product">Himedia No.2</td>
+                <td>SOY-BIO N50</td>
+                <td><span class="distance">0.072</span></td>
+                <td class="sempio-product">RICE-1 (80%) + PPR Type4 (20%)</td>
+                <td><span class="distance" style="background:#c8e6c9; color:#2e7d32;">0.010</span></td>
+                <td><span style="color:#27ae60; font-weight:bold;">▼ 85.9%</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 배합: SOY-N+ 80% + PEA-BIO 20% (거리: 0.012, ▼83.7%) / PEA-1 40% + SOY-BIO 60% (거리: 0.013, ▼82.5%)</td>
+            </tr>
+            
+            <tr>
+                <td class="target-product">Gibco SOY100</td>
+                <td>SOY-L</td>
+                <td><span class="distance">0.138</span></td>
+                <td class="sempio-product">SOY-L (80%) + SOY-P (20%)</td>
+                <td><span class="distance" style="background:#c8e6c9; color:#2e7d32;">0.120</span></td>
+                <td><span style="color:#27ae60; font-weight:bold;">▼ 12.6%</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 배합: SOY-P 50% + RICE-1 50% (거리: 0.121, ▼12.2%) / SOY-P 50% + RICE-BIO 50% (거리: 0.122, ▼11.2%)</td>
+            </tr>
+            
+            <tr>
+                <td class="target-product">Gibco Soytone</td>
+                <td>SOY-BIO</td>
+                <td><span class="distance">0.047</span></td>
+                <td class="sempio-product">SOY-1 (60%) + SOY-L (40%)</td>
+                <td><span class="distance" style="background:#c8e6c9; color:#2e7d32;">0.007</span></td>
+                <td><span style="color:#27ae60; font-weight:bold;">▼ 85.3%</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 배합: SOY-1 80% + SOY-BIO N50 20% (거리: 0.008, ▼83.5%) / SOY-L 90% + Fish Collagen 10% (거리: 0.010, ▼79.8%)</td>
+            </tr>
+            
+                </tbody>
+            </table>
+
+            <div class="mapping-note">
+                <strong>💡 배합 활용 팁:</strong><br>
+                • 개선율이 높을수록 배합의 효과가 큽니다<br>
+                • 비율은 10% 단위로 최적화되었으며, 실제 적용 시 미세 조정 가능<br>
+                • 배합 시 성분이 선형적으로 혼합된다는 가정 하에 계산됨
+            </div>
+        </div>
+
+        <!-- 효모추출물 3제품 배합 최적화 섹션 -->
+        <div class="card">
+            <h2>🍺 효모추출물(Yeast Extract) 3제품 배합 최적화</h2>
+
+            <div class="mapping-note" style="background: #e0f2f1; border-left-color: #009688; color: #004d40;">
+                <strong>3제품 배합 최적화란?</strong><br>
+                효모추출물은 식물성 펩톤과 성분 프로파일이 상이하여 단일 또는 2제품 배합으로는 한계가 있습니다.
+                Sempio 제품 3개를 조합하면 더 정밀하게 효모추출물 특성에 근접할 수 있습니다.<br>
+                아래는 nMDS 좌표 기반으로 계산한 <strong>3제품 최적 배합</strong> 결과입니다.<br>
+                <em>※ 비율 합계는 100%이며, 실제 적용 시 배합 테스트를 통한 검증을 권장합니다.</em>
+            </div>
+
+            <table class="mapping-table">
+                <thead>
+                    <tr>
+                        <th>효모추출물 타겟</th>
+                        <th>단일 최적</th>
+                        <th>2제품 배합</th>
+                        <th>3제품 배합 추천</th>
+                        <th>3제품 거리</th>
+                        <th>개선율</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+            <tr>
+                <td class="target-product">LPS Yeast extract</td>
+                <td>RICE-BIO<br><span class="distance">0.458</span></td>
+                <td>-<br><span class="distance">-</span></td>
+                <td class="sempio-product">PEA-1 (10%)<br>+ RICE-1 (10%)<br>+ RICE-BIO (80%)</td>
+                <td><span class="distance" style="background:#b2dfdb; color:#00695c;">0.462</span></td>
+                <td><span style="color:#00897b; font-weight:bold;">▼ -1.0% (단일比)</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 3제품 배합: RICE-1 10% + PEA-BIO 10% + RICE-BIO 80% (거리: 0.464) / RICE-1 10% + SOY-BIO N50 10% + RICE-BIO 80% (거리: 0.465)</td>
+            </tr>
+            
+            <tr>
+                <td class="target-product">Hanmi Lot1</td>
+                <td>RICE-BIO<br><span class="distance">0.514</span></td>
+                <td>-<br><span class="distance">-</span></td>
+                <td class="sempio-product">PEA-1 (10%)<br>+ RICE-1 (10%)<br>+ RICE-BIO (80%)</td>
+                <td><span class="distance" style="background:#b2dfdb; color:#00695c;">0.519</span></td>
+                <td><span style="color:#00897b; font-weight:bold;">▼ -0.9% (단일比)</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 3제품 배합: RICE-1 10% + SOY-BIO N50 10% + RICE-BIO 80% (거리: 0.520) / RICE-1 10% + PEA-BIO 10% + RICE-BIO 80% (거리: 0.521)</td>
+            </tr>
+            
+            <tr>
+                <td class="target-product">FNI100</td>
+                <td>RICE-BIO<br><span class="distance">0.668</span></td>
+                <td>-<br><span class="distance">-</span></td>
+                <td class="sempio-product">PEA-1 (10%)<br>+ RICE-1 (10%)<br>+ RICE-BIO (80%)</td>
+                <td><span class="distance" style="background:#b2dfdb; color:#00695c;">0.672</span></td>
+                <td><span style="color:#00897b; font-weight:bold;">▼ -0.6% (단일比)</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 3제품 배합: RICE-1 10% + PEA-BIO 10% + RICE-BIO 80% (거리: 0.673) / PEA-1 10% + PEA-BIO 10% + RICE-BIO 80% (거리: 0.674)</td>
+            </tr>
+            
+            <tr>
+                <td class="target-product">Gistex LS Ferm</td>
+                <td>RICE-BIO<br><span class="distance">0.642</span></td>
+                <td>-<br><span class="distance">-</span></td>
+                <td class="sempio-product">RICE-1 (10%)<br>+ SOY-BIO N50 (10%)<br>+ RICE-BIO (80%)</td>
+                <td><span class="distance" style="background:#b2dfdb; color:#00695c;">0.645</span></td>
+                <td><span style="color:#00897b; font-weight:bold;">▼ -0.5% (단일比)</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 3제품 배합: SOY-L 10% + RICE-1 10% + RICE-BIO 80% (거리: 0.646) / PEA-1 10% + RICE-1 10% + RICE-BIO 80% (거리: 0.647)</td>
+            </tr>
+            
+            <tr>
+                <td class="target-product">Hanmi Lot2</td>
+                <td>RICE-BIO<br><span class="distance">0.541</span></td>
+                <td>-<br><span class="distance">-</span></td>
+                <td class="sempio-product">PEA-1 (10%)<br>+ RICE-1 (10%)<br>+ RICE-BIO (80%)</td>
+                <td><span class="distance" style="background:#b2dfdb; color:#00695c;">0.546</span></td>
+                <td><span style="color:#00897b; font-weight:bold;">▼ -0.8% (단일比)</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 3제품 배합: RICE-1 10% + PEA-BIO 10% + RICE-BIO 80% (거리: 0.548) / RICE-1 10% + SOY-BIO N50 10% + RICE-BIO 80% (거리: 0.548)</td>
+            </tr>
+            
+            <tr>
+                <td class="target-product">FNI800</td>
+                <td>RICE-1<br><span class="distance">0.974</span></td>
+                <td>SOY-L 30% + RICE-BIO 70%<br><span class="distance">0.969</span></td>
+                <td class="sempio-product">SOY-L (10%)<br>+ SOY-P (10%)<br>+ RICE-BIO (80%)</td>
+                <td><span class="distance" style="background:#b2dfdb; color:#00695c;">0.969</span></td>
+                <td><span style="color:#00897b; font-weight:bold;">▼ 0.6% (단일比)<br>▼ 0.0% (2제품比)</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 3제품 배합: SOY-L 30% + RICE-1 10% + RICE-BIO 60% (거리: 0.969) / SOY-P 10% + RICE-1 10% + RICE-BIO 80% (거리: 0.969)</td>
+            </tr>
+            
+            <tr>
+                <td class="target-product">NuCel 816 PW</td>
+                <td>RICE-BIO<br><span class="distance">0.477</span></td>
+                <td>-<br><span class="distance">-</span></td>
+                <td class="sempio-product">RICE-1 (10%)<br>+ SOY-BIO N50 (10%)<br>+ RICE-BIO (80%)</td>
+                <td><span class="distance" style="background:#b2dfdb; color:#00695c;">0.479</span></td>
+                <td><span style="color:#00897b; font-weight:bold;">▼ -0.4% (단일比)</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 3제품 배합: SOY-L 10% + RICE-1 10% + RICE-BIO 80% (거리: 0.479) / SOY-L 10% + SOY-BIO N50 10% + RICE-BIO 80% (거리: 0.481)</td>
+            </tr>
+            
+            <tr>
+                <td class="target-product">Yeast Byproduct</td>
+                <td>RICE-1<br><span class="distance">0.068</span></td>
+                <td>SOY-L 10% + RICE-BIO 90%<br><span class="distance">0.064</span></td>
+                <td class="sempio-product">SOY-L (10%)<br>+ RICE-1 (10%)<br>+ RICE-BIO (80%)</td>
+                <td><span class="distance" style="background:#b2dfdb; color:#00695c;">0.064</span></td>
+                <td><span style="color:#00897b; font-weight:bold;">▼ 4.6% (단일比)<br>▼ 0.0% (2제품比)</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 3제품 배합: SOY-L 10% + SOY-BIO N50 10% + RICE-BIO 80% (거리: 0.066) / RICE-1 10% + SOY-BIO N50 20% + RICE-BIO 70% (거리: 0.067)</td>
+            </tr>
+            
+            <tr>
+                <td class="target-product">Bacto Yeast extract</td>
+                <td>RICE-BIO<br><span class="distance">0.501</span></td>
+                <td>-<br><span class="distance">-</span></td>
+                <td class="sempio-product">PEA-1 (10%)<br>+ RICE-1 (10%)<br>+ RICE-BIO (80%)</td>
+                <td><span class="distance" style="background:#b2dfdb; color:#00695c;">0.506</span></td>
+                <td><span style="color:#00897b; font-weight:bold;">▼ -0.9% (단일比)</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 3제품 배합: RICE-1 10% + PEA-BIO 10% + RICE-BIO 80% (거리: 0.507) / PEA-1 10% + PEA-BIO 10% + RICE-BIO 80% (거리: 0.509)</td>
+            </tr>
+            
+            <tr>
+                <td class="target-product">YP180</td>
+                <td>SOY-P<br><span class="distance">1.037</span></td>
+                <td>-<br><span class="distance">-</span></td>
+                <td class="sempio-product">SOY-1 (10%)<br>+ SOY-L (10%)<br>+ SOY-P (80%)</td>
+                <td><span class="distance" style="background:#b2dfdb; color:#00695c;">1.052</span></td>
+                <td><span style="color:#00897b; font-weight:bold;">▼ -1.4% (단일比)</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 3제품 배합: SOY-N+ 10% + SOY-L 10% + SOY-P 80% (거리: 1.056) / SOY-1 10% + SOY-N+ 10% + SOY-P 80% (거리: 1.059)</td>
+            </tr>
+            
+            <tr>
+                <td class="target-product">Yeast extract</td>
+                <td>RICE-BIO<br><span class="distance">0.494</span></td>
+                <td>-<br><span class="distance">-</span></td>
+                <td class="sempio-product">PEA-1 (10%)<br>+ RICE-1 (10%)<br>+ RICE-BIO (80%)</td>
+                <td><span class="distance" style="background:#b2dfdb; color:#00695c;">0.498</span></td>
+                <td><span style="color:#00897b; font-weight:bold;">▼ -0.8% (단일比)</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 3제품 배합: RICE-1 10% + PEA-BIO 10% + RICE-BIO 80% (거리: 0.498) / PEA-1 10% + PEA-BIO 10% + RICE-BIO 80% (거리: 0.500)</td>
+            </tr>
+            
+            <tr>
+                <td class="target-product">NuCel 751 MG</td>
+                <td>RICE-BIO<br><span class="distance">0.395</span></td>
+                <td>-<br><span class="distance">-</span></td>
+                <td class="sempio-product">RICE-1 (10%)<br>+ SOY-BIO N50 (10%)<br>+ RICE-BIO (80%)</td>
+                <td><span class="distance" style="background:#b2dfdb; color:#00695c;">0.399</span></td>
+                <td><span style="color:#00897b; font-weight:bold;">▼ -1.2% (단일比)</span></td>
+            </tr>
+            
+            <tr>
+                <td colspan="6" class="sub-recommendations">대안 3제품 배합: PEA-1 10% + RICE-1 10% + RICE-BIO 80% (거리: 0.400) / SOY-L 10% + RICE-1 10% + RICE-BIO 80% (거리: 0.402)</td>
+            </tr>
+            
+                </tbody>
+            </table>
+
+            <div class="mapping-note" style="background: #fff3e0; border-left-color: #ff9800; color: #e65100;">
+                <strong>⚠️ 효모추출물 대체 시 주의사항:</strong><br>
+                • 효모추출물은 비타민B군, 뉴클레오타이드 등 고유 성분이 있어 완전 대체가 어려울 수 있음<br>
+                • 3제품 배합은 nMDS 공간상 거리만 최적화하며, 실제 기능성은 별도 검증 필요<br>
+                • 발효 공정에 따라 최적 배합 비율이 달라질 수 있음
+            </div>
+        </div>
+
+        
+        <div class="card">
+            <h2>QR 코드로 리포트 공유</h2>
+            <div class="qr-section">
+                <img src="nmds_qr_code.png" alt="QR Code">
+                <p>PC 또는 모바일에서 QR 코드를 스캔하여 리포트를 확인하세요.</p>
+                <p style="color: #27ae60; font-size: 0.9em;">QR 코드 링크: <a href="https://kimyongjin6379-blip.github.io/peptone-analysis/nmds/" target="_blank" style="color: #3498db;">https://kimyongjin6379-blip.github.io/peptone-analysis/nmds/</a></p>
+            </div>
+        </div>
+        
+
+        <div class="footer">
+            <p>Generated: 2026-03-11 12:12:07</p>
+            <p>nMDS Peptone Composition Analysis System (Bray-Curtis Distance)</p>
+        </div>
+    </div>
+
+    <!-- 차트 초기화 스크립트 -->
+<script>(function() { var d = {"data": [{"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "#E74C3C", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Cluster 0", "text": ["SOY-1", "SOY-N+", "SOY-L", "WHEAT-1", "PEA-1", "RICE-1", "SOY-BIO", "SOY-BIO N50", "WHEAT-BIO", "PEA-BIO", "RICE-BIO", "PPR Type3", "LPS Tryptone", "Himedia No.1", "Himedia No.2", "Gibco SOY100", "Gibco Soytone", "Yeast Byproduct", "Mealworm Byproduct", "Cotton Byproduct(Afr)"], "x": [-0.22493681013335887, 0.03791373121232165, -0.09952738832631786, 0.3367498992284293, 0.45297197488106805, 0.3338862381946059, -0.17068515955541552, 0.14702657623224452, 0.3257889762417028, 0.5333963005617114, 0.3498902505754177, -0.061612915899441345, 0.38204716717495735, 0.09581780311683895, 0.09994022634007566, -0.2992014565686695, -0.2625185795991649, 0.20469007745916437, 0.42433062383916836, -0.23114371983981427], "y": [-0.1667019118930695, -0.15036757406638024, -0.11442749982971581, -0.3925758981784837, -0.08432315402814472, -0.04880492656454684, -0.17646422138392076, -0.09167521691831483, -0.3308719648115345, -0.1073224884989645, -0.06538692685964112, -0.13696589804198417, -0.19338647131634754, -0.28379738475921545, -0.18181498134659912, -0.1049193252744743, -0.15384607946290144, -0.03888149749935714, -0.04071491231942249, -0.5197027887680692], "z": [0.060761585850759546, 0.09764303551333843, 0.14299587671234293, 0.3251850063804321, 0.13254558718622744, 0.14345336486797708, 0.14795090548886122, 0.1534230616298228, 0.4031130561911383, 0.15266169065218135, 0.19429056479231688, 0.0847471326850234, 0.013550011264238014, 0.24060065065574104, 0.18905800482398943, 0.4378301711591332, 0.2704449436900925, 0.34073311013502483, 0.42391424646147563, 0.12376238481622978], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "#3498DB", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Cluster 1", "text": ["Fish Collagen", "Pork peptoneC1", "Pork peptoneC3", "Pork peptoneSol", "PPR Type2", "PPR Type4", "Pork peptoneD", "Malt Byproduct", "Cotton Byproduct(Ind)", "Rice bran"], "x": [0.0010204083567753846, -0.003518778012389475, -0.028142188608586458, 0.06845964594687091, 0.15976047408496305, 0.15095168904298245, -0.1513672406330901, -0.6131868866527219, -0.4134068893858771, -0.6779853994426813], "y": [-0.40640539152168126, -0.4081708546457289, -0.3997655061271362, -0.45337370543889743, -0.32144392226061036, -0.36598486846561823, -0.2765473502506467, -1.0592573915540617, -0.5770684942999973, -1.3863160708139939], "z": [-0.8375932084988177, -1.1261884918935618, -1.081513739094539, -0.5184413196275869, -0.6774739114225146, -0.5584208101481934, -0.3686609444604614, 0.13085378081895746, 0.040636894532703804, 0.24410656860674176], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "#2ECC71", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Cluster 2", "text": ["SOY-P", "LPS Soy peptone", "Solko soypeptone", "Tatua HSP349", "Solabia soypeptone-F", "Solabia papaic soy peptone", "Kerry Hy-soy kips", "Kerry kosher ips", "Angel FP410", "YP180", "Beef extract"], "x": [-0.5136982942918118, -0.7827290121506078, -0.38452104131595377, -0.6178685812714624, -0.28570316292586834, -0.5625650036903203, -0.5162359703503039, -0.5002573132573304, -0.297142638160929, -0.25225688317032013, -0.1565008771652695], "y": [-0.1984864904128071, 0.3435354387592779, 0.24995113479386144, 0.30861499168450485, 0.3063505874617913, 0.43875165013315404, 0.2895703256412126, 0.4413087848623551, 0.249684816048447, 0.8578693216977595, 0.24946312066824827], "z": [-0.0782046004815663, -0.17623128510266195, 0.08364123618819949, -0.30734005898443484, -0.1033648551483057, -0.3619625595088441, -0.22959417382842984, -0.3267216356714191, -0.06250813613395431, -0.5239922678793542, -1.0367957484544887], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "#9B59B6", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Cluster 3", "text": ["NuCel 816 PW", "NuCel 751 MG", "LPS Yeast extract", "FNI100", "FNI800", "Gistex LS Ferm", "Bacto Yeast extract", "Hanmi Lot1", "Hanmi Lot2", "Kerry amysoy", "Yeast extract", "Bacto Casitone"], "x": [0.18805584272115156, 0.298316387225372, 0.35616076838849625, 0.2948858375513411, -0.17851839791972018, 0.15144854125820767, 0.3666156827566082, 0.29873625920185953, 0.31618427252600967, 0.8135228194725749, 0.43763133703533036, 0.659030777701176], "y": [0.43066557774131664, 0.3513612640568421, 0.43451224821856677, 0.5102321636417713, 0.7781096537234191, 0.5530834857784912, 0.42099217490122515, 0.43784894941334024, 0.4599952532479591, 0.34374796176345507, 0.48570648880658257, 0.29441577456868545], "z": [0.30941507779527283, 0.29008501690761823, 0.27329044044113904, 0.5911732782923492, 0.4901405284645869, 0.44739919364405234, 0.3843283664295345, 0.39214371998081937, 0.424392221024762, 0.11715221310768806, 0.17770841136781967, -0.10012359221945608], "type": "scatter3d"}], "layout": {"template": {"data": {"histogram2dcontour": [{"type": "histogram2dcontour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "choropleth": [{"type": "choropleth", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "histogram2d": [{"type": "histogram2d", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "heatmap": [{"type": "heatmap", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "contourcarpet": [{"type": "contourcarpet", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "contour": [{"type": "contour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "surface": [{"type": "surface", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "mesh3d": [{"type": "mesh3d", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "scatter": [{"fillpattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}, "type": "scatter"}], "parcoords": [{"type": "parcoords", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolargl": [{"type": "scatterpolargl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "bar": [{"error_x": {"color": "#2a3f5f"}, "error_y": {"color": "#2a3f5f"}, "marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "bar"}], "scattergeo": [{"type": "scattergeo", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolar": [{"type": "scatterpolar", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "histogram": [{"marker": {"pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "histogram"}], "scattergl": [{"type": "scattergl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatter3d": [{"type": "scatter3d", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermap": [{"type": "scattermap", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermapbox": [{"type": "scattermapbox", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterternary": [{"type": "scatterternary", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattercarpet": [{"type": "scattercarpet", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "carpet": [{"aaxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "baxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "type": "carpet"}], "table": [{"cells": {"fill": {"color": "#EBF0F8"}, "line": {"color": "white"}}, "header": {"fill": {"color": "#C8D4E3"}, "line": {"color": "white"}}, "type": "table"}], "barpolar": [{"marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "barpolar"}], "pie": [{"automargin": true, "type": "pie"}]}, "layout": {"autotypenumbers": "strict", "colorway": ["#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A", "#19d3f3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"], "font": {"color": "#2a3f5f"}, "hovermode": "closest", "hoverlabel": {"align": "left"}, "paper_bgcolor": "white", "plot_bgcolor": "#E5ECF6", "polar": {"bgcolor": "#E5ECF6", "angularaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "radialaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "ternary": {"bgcolor": "#E5ECF6", "aaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "baxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "caxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "coloraxis": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "colorscale": {"sequential": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "sequentialminus": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "diverging": [[0, "#8e0152"], [0.1, "#c51b7d"], [0.2, "#de77ae"], [0.3, "#f1b6da"], [0.4, "#fde0ef"], [0.5, "#f7f7f7"], [0.6, "#e6f5d0"], [0.7, "#b8e186"], [0.8, "#7fbc41"], [0.9, "#4d9221"], [1, "#276419"]]}, "xaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "yaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "scene": {"xaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "yaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "zaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}}, "shapedefaults": {"line": {"color": "#2a3f5f"}}, "annotationdefaults": {"arrowcolor": "#2a3f5f", "arrowhead": 0, "arrowwidth": 1}, "geo": {"bgcolor": "white", "landcolor": "#E5ECF6", "subunitcolor": "white", "showland": true, "showlakes": true, "lakecolor": "white"}, "title": {"x": 0.05}, "mapbox": {"style": "light"}}}, "title": {"font": {"size": 18}, "text": "nMDS 3D - \ud074\ub7ec\uc2a4\ud130\ubcc4"}, "margin": {"l": 0, "r": 0, "t": 50, "b": 0}, "scene": {"xaxis": {"title": {"text": "nMDS1"}}, "yaxis": {"title": {"text": "nMDS2"}}, "zaxis": {"title": {"text": "nMDS3"}}}, "height": 550}}; Plotly.newPlot("chart_3d_cluster", d.data, d.layout); })()</script>
+<script>(function() { var d = {"data": [{"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "#E74C3C", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Cluster 0", "text": ["SOY-1", "SOY-N+", "SOY-L", "WHEAT-1", "PEA-1", "RICE-1", "SOY-BIO", "SOY-BIO N50", "WHEAT-BIO", "PEA-BIO", "RICE-BIO", "PPR Type3", "LPS Tryptone", "Himedia No.1", "Himedia No.2", "Gibco SOY100", "Gibco Soytone", "Yeast Byproduct", "Mealworm Byproduct", "Cotton Byproduct(Afr)"], "x": [-0.14352777717990778, -0.09497416216568703, -0.054936765787935354, -0.25023811502081067, 0.016089163436947416, 0.035542709221754544, -0.14445656540384383, -0.014654803809996942, -0.190448801480668, 0.0037770853916344114, 0.04766807380173341, -0.09460162899520913, -0.12987147838027488, -0.176891299200333, -0.08587355358936256, 0.03897891247139274, -0.11035074544260273, 0.09650231919048684, 0.12344104344004722, -0.5072677505385533], "y": [-0.06724103967846133, 0.1304653552894853, 0.054435000042412446, 0.5165117989106092, 0.4654598085355059, 0.3586622994218794, 0.020754568387132206, 0.22168190695175483, 0.5404884383463758, 0.5531778929032307, 0.38871010969176356, 0.05928316909481747, 0.3902263428025351, 0.2535577966304922, 0.20996933569582577, -0.04648765583595613, -0.011984836107070906, 0.32948220644493237, 0.5524958639085088, 0.12689230672580964], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "#3498DB", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Cluster 1", "text": ["Fish Collagen", "Pork peptoneC1", "Pork peptoneC3", "Pork peptoneSol", "PPR Type2", "PPR Type4", "Pork peptoneD", "Malt Byproduct", "Cotton Byproduct(Ind)", "Rice bran"], "x": [-0.6507097052597637, -0.8283437165814668, -0.7957880095031958, -0.6047262274517399, -0.5530785544700859, -0.5547700252660419, -0.3454649452329643, -1.2566412882304154, -0.661702262053226, -1.6229410263450688], "y": [-0.6955859554397874, -0.9936970544790604, -0.9542539034760045, -0.29612305875231404, -0.49443370619353905, -0.3368608730813603, -0.2847005069685349, 0.2119494678639417, 0.03950677976131904, 0.42104403985780925], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "#2ECC71", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Cluster 2", "text": ["SOY-P", "LPS Soy peptone", "Solko soypeptone", "Tatua HSP349", "Solabia soypeptone-F", "Solabia papaic soy peptone", "Kerry Hy-soy kips", "Kerry kosher ips", "Angel FP410", "YP180", "Beef extract"], "x": [-0.1803970330049682, 0.2855983403671819, 0.30140628002681635, 0.25324470799566906, 0.2599472874974494, 0.3634560355215125, 0.24564000742100453, 0.3564299427517639, 0.2290857172932627, 0.7766815616590366, -0.1450703936170514], "y": [-0.3572159466432475, -0.7971378810656629, -0.24850517982531076, -0.671633884419155, -0.30144836952510357, -0.6919743593785892, -0.5321685169950697, -0.615843276526701, -0.2616401861338876, -0.7566496897812595, -1.1322595275739773], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "#9B59B6", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Cluster 3", "text": ["NuCel 816 PW", "NuCel 751 MG", "LPS Yeast extract", "FNI100", "FNI800", "Gistex LS Ferm", "Bacto Yeast extract", "Hanmi Lot1", "Hanmi Lot2", "Kerry amysoy", "Yeast extract", "Bacto Casitone"], "x": [0.5038748765386041, 0.43729917086425796, 0.5049207061826811, 0.7128961263747872, 0.9427555875188086, 0.6747803587798088, 0.549119705908943, 0.5593526155782238, 0.5886635393151124, 0.4483711034361536, 0.5396671913919951, 0.3025364646341041], "y": [0.24873661862589408, 0.3262344876970003, 0.3700879589786404, 0.4544171102130125, 0.00353569579910235, 0.2521808789732306, 0.39367391302893556, 0.34113073230552293, 0.3661709715745734, 0.8186451456088264, 0.4304348389062189, 0.6978425689029557], "type": "scatter"}], "layout": {"template": {"data": {"histogram2dcontour": [{"type": "histogram2dcontour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "choropleth": [{"type": "choropleth", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "histogram2d": [{"type": "histogram2d", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "heatmap": [{"type": "heatmap", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "contourcarpet": [{"type": "contourcarpet", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "contour": [{"type": "contour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "surface": [{"type": "surface", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "mesh3d": [{"type": "mesh3d", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "scatter": [{"fillpattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}, "type": "scatter"}], "parcoords": [{"type": "parcoords", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolargl": [{"type": "scatterpolargl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "bar": [{"error_x": {"color": "#2a3f5f"}, "error_y": {"color": "#2a3f5f"}, "marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "bar"}], "scattergeo": [{"type": "scattergeo", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolar": [{"type": "scatterpolar", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "histogram": [{"marker": {"pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "histogram"}], "scattergl": [{"type": "scattergl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatter3d": [{"type": "scatter3d", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermap": [{"type": "scattermap", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermapbox": [{"type": "scattermapbox", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterternary": [{"type": "scatterternary", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattercarpet": [{"type": "scattercarpet", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "carpet": [{"aaxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "baxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "type": "carpet"}], "table": [{"cells": {"fill": {"color": "#EBF0F8"}, "line": {"color": "white"}}, "header": {"fill": {"color": "#C8D4E3"}, "line": {"color": "white"}}, "type": "table"}], "barpolar": [{"marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "barpolar"}], "pie": [{"automargin": true, "type": "pie"}]}, "layout": {"autotypenumbers": "strict", "colorway": ["#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A", "#19d3f3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"], "font": {"color": "#2a3f5f"}, "hovermode": "closest", "hoverlabel": {"align": "left"}, "paper_bgcolor": "white", "plot_bgcolor": "#E5ECF6", "polar": {"bgcolor": "#E5ECF6", "angularaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "radialaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "ternary": {"bgcolor": "#E5ECF6", "aaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "baxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "caxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "coloraxis": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "colorscale": {"sequential": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "sequentialminus": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "diverging": [[0, "#8e0152"], [0.1, "#c51b7d"], [0.2, "#de77ae"], [0.3, "#f1b6da"], [0.4, "#fde0ef"], [0.5, "#f7f7f7"], [0.6, "#e6f5d0"], [0.7, "#b8e186"], [0.8, "#7fbc41"], [0.9, "#4d9221"], [1, "#276419"]]}, "xaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "yaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "scene": {"xaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "yaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "zaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}}, "shapedefaults": {"line": {"color": "#2a3f5f"}}, "annotationdefaults": {"arrowcolor": "#2a3f5f", "arrowhead": 0, "arrowwidth": 1}, "geo": {"bgcolor": "white", "landcolor": "#E5ECF6", "subunitcolor": "white", "showland": true, "showlakes": true, "lakecolor": "white"}, "title": {"x": 0.05}, "mapbox": {"style": "light"}}}, "title": {"font": {"size": 18}, "text": "nMDS 2D - \ud074\ub7ec\uc2a4\ud130\ubcc4"}, "xaxis": {"title": {"text": "nMDS1"}}, "yaxis": {"title": {"text": "nMDS2"}}, "height": 450}}; Plotly.newPlot("chart_2d_cluster", d.data, d.layout); })()</script>
+<script>(function() { var d = {"data": [{"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(141,211,199)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "soy", "text": ["SOY-1", "SOY-N+", "SOY-L", "SOY-P", "SOY-BIO", "SOY-BIO N50", "PPR Type3", "LPS Soy peptone", "Gibco SOY100", "Gibco Soytone", "Solko soypeptone", "Tatua HSP349", "Solabia soypeptone-F", "Solabia papaic soy peptone", "Kerry Hy-soy kips", "Kerry kosher ips", "Kerry amysoy", "Angel FP410"], "x": [-0.22493681013335887, 0.03791373121232165, -0.09952738832631786, -0.5136982942918118, -0.17068515955541552, 0.14702657623224452, -0.061612915899441345, -0.7827290121506078, -0.2992014565686695, -0.2625185795991649, -0.38452104131595377, -0.6178685812714624, -0.28570316292586834, -0.5625650036903203, -0.5162359703503039, -0.5002573132573304, 0.8135228194725749, -0.297142638160929], "y": [-0.1667019118930695, -0.15036757406638024, -0.11442749982971581, -0.1984864904128071, -0.17646422138392076, -0.09167521691831483, -0.13696589804198417, 0.3435354387592779, -0.1049193252744743, -0.15384607946290144, 0.24995113479386144, 0.30861499168450485, 0.3063505874617913, 0.43875165013315404, 0.2895703256412126, 0.4413087848623551, 0.34374796176345507, 0.249684816048447], "z": [0.060761585850759546, 0.09764303551333843, 0.14299587671234293, -0.0782046004815663, 0.14795090548886122, 0.1534230616298228, 0.0847471326850234, -0.17623128510266195, 0.4378301711591332, 0.2704449436900925, 0.08364123618819949, -0.30734005898443484, -0.1033648551483057, -0.3619625595088441, -0.22959417382842984, -0.3267216356714191, 0.11715221310768806, -0.06250813613395431], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(255,255,179)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "wheat", "text": ["WHEAT-1", "WHEAT-BIO"], "x": [0.3367498992284293, 0.3257889762417028], "y": [-0.3925758981784837, -0.3308719648115345], "z": [0.3251850063804321, 0.4031130561911383], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(190,186,218)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "pea", "text": ["PEA-1", "PEA-BIO"], "x": [0.45297197488106805, 0.5333963005617114], "y": [-0.08432315402814472, -0.1073224884989645], "z": [0.13254558718622744, 0.15266169065218135], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(251,128,114)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "rice", "text": ["RICE-1", "RICE-BIO", "Rice bran"], "x": [0.3338862381946059, 0.3498902505754177, -0.6779853994426813], "y": [-0.04880492656454684, -0.06538692685964112, -1.3863160708139939], "z": [0.14345336486797708, 0.19429056479231688, 0.24410656860674176], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(128,177,211)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "fish", "text": ["Fish Collagen", "PPR Type2"], "x": [0.0010204083567753846, 0.15976047408496305], "y": [-0.40640539152168126, -0.32144392226061036], "z": [-0.8375932084988177, -0.6774739114225146], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(253,180,98)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "pork", "text": ["Pork peptoneC1", "Pork peptoneC3", "Pork peptoneSol", "PPR Type4", "Pork peptoneD"], "x": [-0.003518778012389475, -0.028142188608586458, 0.06845964594687091, 0.15095168904298245, -0.1513672406330901], "y": [-0.4081708546457289, -0.3997655061271362, -0.45337370543889743, -0.36598486846561823, -0.2765473502506467], "z": [-1.1261884918935618, -1.081513739094539, -0.5184413196275869, -0.5584208101481934, -0.3686609444604614], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(179,222,105)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "casein", "text": ["LPS Tryptone", "Bacto Casitone"], "x": [0.38204716717495735, 0.659030777701176], "y": [-0.19338647131634754, 0.29441577456868545], "z": [0.013550011264238014, -0.10012359221945608], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(252,205,229)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "plant", "text": ["Himedia No.1", "Himedia No.2"], "x": [0.09581780311683895, 0.09994022634007566], "y": [-0.28379738475921545, -0.18181498134659912], "z": [0.24060065065574104, 0.18905800482398943], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(217,217,217)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "yeast", "text": ["NuCel 816 PW", "NuCel 751 MG", "LPS Yeast extract", "FNI100", "FNI800", "Gistex LS Ferm", "Bacto Yeast extract", "Hanmi Lot1", "Hanmi Lot2", "Yeast Byproduct", "YP180", "Yeast extract"], "x": [0.18805584272115156, 0.298316387225372, 0.35616076838849625, 0.2948858375513411, -0.17851839791972018, 0.15144854125820767, 0.3666156827566082, 0.29873625920185953, 0.31618427252600967, 0.20469007745916437, -0.25225688317032013, 0.43763133703533036], "y": [0.43066557774131664, 0.3513612640568421, 0.43451224821856677, 0.5102321636417713, 0.7781096537234191, 0.5530834857784912, 0.42099217490122515, 0.43784894941334024, 0.4599952532479591, -0.03888149749935714, 0.8578693216977595, 0.48570648880658257], "z": [0.30941507779527283, 0.29008501690761823, 0.27329044044113904, 0.5911732782923492, 0.4901405284645869, 0.44739919364405234, 0.3843283664295345, 0.39214371998081937, 0.424392221024762, 0.34073311013502483, -0.5239922678793542, 0.17770841136781967], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(188,128,189)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "malt", "text": ["Malt Byproduct"], "x": [-0.6131868866527219], "y": [-1.0592573915540617], "z": [0.13085378081895746], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(204,235,197)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "insect", "text": ["Mealworm Byproduct"], "x": [0.42433062383916836], "y": [-0.04071491231942249], "z": [0.42391424646147563], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(255,237,111)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "cotton", "text": ["Cotton Byproduct(Ind)", "Cotton Byproduct(Afr)"], "x": [-0.4134068893858771, -0.23114371983981427], "y": [-0.5770684942999973, -0.5197027887680692], "z": [0.040636894532703804, 0.12376238481622978], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(141,211,199)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "beef", "text": ["Beef extract"], "x": [-0.1565008771652695], "y": [0.24946312066824827], "z": [-1.0367957484544887], "type": "scatter3d"}], "layout": {"template": {"data": {"histogram2dcontour": [{"type": "histogram2dcontour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "choropleth": [{"type": "choropleth", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "histogram2d": [{"type": "histogram2d", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "heatmap": [{"type": "heatmap", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "contourcarpet": [{"type": "contourcarpet", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "contour": [{"type": "contour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "surface": [{"type": "surface", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "mesh3d": [{"type": "mesh3d", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "scatter": [{"fillpattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}, "type": "scatter"}], "parcoords": [{"type": "parcoords", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolargl": [{"type": "scatterpolargl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "bar": [{"error_x": {"color": "#2a3f5f"}, "error_y": {"color": "#2a3f5f"}, "marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "bar"}], "scattergeo": [{"type": "scattergeo", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolar": [{"type": "scatterpolar", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "histogram": [{"marker": {"pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "histogram"}], "scattergl": [{"type": "scattergl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatter3d": [{"type": "scatter3d", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermap": [{"type": "scattermap", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermapbox": [{"type": "scattermapbox", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterternary": [{"type": "scatterternary", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattercarpet": [{"type": "scattercarpet", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "carpet": [{"aaxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "baxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "type": "carpet"}], "table": [{"cells": {"fill": {"color": "#EBF0F8"}, "line": {"color": "white"}}, "header": {"fill": {"color": "#C8D4E3"}, "line": {"color": "white"}}, "type": "table"}], "barpolar": [{"marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "barpolar"}], "pie": [{"automargin": true, "type": "pie"}]}, "layout": {"autotypenumbers": "strict", "colorway": ["#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A", "#19d3f3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"], "font": {"color": "#2a3f5f"}, "hovermode": "closest", "hoverlabel": {"align": "left"}, "paper_bgcolor": "white", "plot_bgcolor": "#E5ECF6", "polar": {"bgcolor": "#E5ECF6", "angularaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "radialaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "ternary": {"bgcolor": "#E5ECF6", "aaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "baxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "caxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "coloraxis": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "colorscale": {"sequential": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "sequentialminus": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "diverging": [[0, "#8e0152"], [0.1, "#c51b7d"], [0.2, "#de77ae"], [0.3, "#f1b6da"], [0.4, "#fde0ef"], [0.5, "#f7f7f7"], [0.6, "#e6f5d0"], [0.7, "#b8e186"], [0.8, "#7fbc41"], [0.9, "#4d9221"], [1, "#276419"]]}, "xaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "yaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "scene": {"xaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "yaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "zaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}}, "shapedefaults": {"line": {"color": "#2a3f5f"}}, "annotationdefaults": {"arrowcolor": "#2a3f5f", "arrowhead": 0, "arrowwidth": 1}, "geo": {"bgcolor": "white", "landcolor": "#E5ECF6", "subunitcolor": "white", "showland": true, "showlakes": true, "lakecolor": "white"}, "title": {"x": 0.05}, "mapbox": {"style": "light"}}}, "title": {"font": {"size": 18}, "text": "nMDS 3D - \uc6d0\ub8cc(Raw Material)"}, "margin": {"l": 0, "r": 0, "t": 50, "b": 0}, "legend": {"title": {"text": "\uc6d0\ub8cc(Raw Material)"}}, "scene": {"xaxis": {"title": {"text": "nMDS1"}}, "yaxis": {"title": {"text": "nMDS2"}}, "zaxis": {"title": {"text": "nMDS3"}}}, "height": 550}}; Plotly.newPlot("chart_3d_raw_material", d.data, d.layout); })()</script>
+<script>(function() { var d = {"data": [{"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(141,211,199)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "soy", "text": ["SOY-1", "SOY-N+", "SOY-L", "SOY-P", "SOY-BIO", "SOY-BIO N50", "PPR Type3", "LPS Soy peptone", "Gibco SOY100", "Gibco Soytone", "Solko soypeptone", "Tatua HSP349", "Solabia soypeptone-F", "Solabia papaic soy peptone", "Kerry Hy-soy kips", "Kerry kosher ips", "Kerry amysoy", "Angel FP410"], "x": [-0.14352777717990778, -0.09497416216568703, -0.054936765787935354, -0.1803970330049682, -0.14445656540384383, -0.014654803809996942, -0.09460162899520913, 0.2855983403671819, 0.03897891247139274, -0.11035074544260273, 0.30140628002681635, 0.25324470799566906, 0.2599472874974494, 0.3634560355215125, 0.24564000742100453, 0.3564299427517639, 0.4483711034361536, 0.2290857172932627], "y": [-0.06724103967846133, 0.1304653552894853, 0.054435000042412446, -0.3572159466432475, 0.020754568387132206, 0.22168190695175483, 0.05928316909481747, -0.7971378810656629, -0.04648765583595613, -0.011984836107070906, -0.24850517982531076, -0.671633884419155, -0.30144836952510357, -0.6919743593785892, -0.5321685169950697, -0.615843276526701, 0.8186451456088264, -0.2616401861338876], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(255,255,179)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "wheat", "text": ["WHEAT-1", "WHEAT-BIO"], "x": [-0.25023811502081067, -0.190448801480668], "y": [0.5165117989106092, 0.5404884383463758], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(190,186,218)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "pea", "text": ["PEA-1", "PEA-BIO"], "x": [0.016089163436947416, 0.0037770853916344114], "y": [0.4654598085355059, 0.5531778929032307], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(251,128,114)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "rice", "text": ["RICE-1", "RICE-BIO", "Rice bran"], "x": [0.035542709221754544, 0.04766807380173341, -1.6229410263450688], "y": [0.3586622994218794, 0.38871010969176356, 0.42104403985780925], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(128,177,211)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "fish", "text": ["Fish Collagen", "PPR Type2"], "x": [-0.6507097052597637, -0.5530785544700859], "y": [-0.6955859554397874, -0.49443370619353905], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(253,180,98)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "pork", "text": ["Pork peptoneC1", "Pork peptoneC3", "Pork peptoneSol", "PPR Type4", "Pork peptoneD"], "x": [-0.8283437165814668, -0.7957880095031958, -0.6047262274517399, -0.5547700252660419, -0.3454649452329643], "y": [-0.9936970544790604, -0.9542539034760045, -0.29612305875231404, -0.3368608730813603, -0.2847005069685349], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(179,222,105)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "casein", "text": ["LPS Tryptone", "Bacto Casitone"], "x": [-0.12987147838027488, 0.3025364646341041], "y": [0.3902263428025351, 0.6978425689029557], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(252,205,229)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "plant", "text": ["Himedia No.1", "Himedia No.2"], "x": [-0.176891299200333, -0.08587355358936256], "y": [0.2535577966304922, 0.20996933569582577], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(217,217,217)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "yeast", "text": ["NuCel 816 PW", "NuCel 751 MG", "LPS Yeast extract", "FNI100", "FNI800", "Gistex LS Ferm", "Bacto Yeast extract", "Hanmi Lot1", "Hanmi Lot2", "Yeast Byproduct", "YP180", "Yeast extract"], "x": [0.5038748765386041, 0.43729917086425796, 0.5049207061826811, 0.7128961263747872, 0.9427555875188086, 0.6747803587798088, 0.549119705908943, 0.5593526155782238, 0.5886635393151124, 0.09650231919048684, 0.7766815616590366, 0.5396671913919951], "y": [0.24873661862589408, 0.3262344876970003, 0.3700879589786404, 0.4544171102130125, 0.00353569579910235, 0.2521808789732306, 0.39367391302893556, 0.34113073230552293, 0.3661709715745734, 0.32948220644493237, -0.7566496897812595, 0.4304348389062189], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(188,128,189)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "malt", "text": ["Malt Byproduct"], "x": [-1.2566412882304154], "y": [0.2119494678639417], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(204,235,197)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "insect", "text": ["Mealworm Byproduct"], "x": [0.12344104344004722], "y": [0.5524958639085088], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(255,237,111)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "cotton", "text": ["Cotton Byproduct(Ind)", "Cotton Byproduct(Afr)"], "x": [-0.661702262053226, -0.5072677505385533], "y": [0.03950677976131904, 0.12689230672580964], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(141,211,199)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "beef", "text": ["Beef extract"], "x": [-0.1450703936170514], "y": [-1.1322595275739773], "type": "scatter"}], "layout": {"template": {"data": {"histogram2dcontour": [{"type": "histogram2dcontour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "choropleth": [{"type": "choropleth", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "histogram2d": [{"type": "histogram2d", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "heatmap": [{"type": "heatmap", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "contourcarpet": [{"type": "contourcarpet", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "contour": [{"type": "contour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "surface": [{"type": "surface", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "mesh3d": [{"type": "mesh3d", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "scatter": [{"fillpattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}, "type": "scatter"}], "parcoords": [{"type": "parcoords", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolargl": [{"type": "scatterpolargl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "bar": [{"error_x": {"color": "#2a3f5f"}, "error_y": {"color": "#2a3f5f"}, "marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "bar"}], "scattergeo": [{"type": "scattergeo", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolar": [{"type": "scatterpolar", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "histogram": [{"marker": {"pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "histogram"}], "scattergl": [{"type": "scattergl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatter3d": [{"type": "scatter3d", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermap": [{"type": "scattermap", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermapbox": [{"type": "scattermapbox", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterternary": [{"type": "scatterternary", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattercarpet": [{"type": "scattercarpet", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "carpet": [{"aaxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "baxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "type": "carpet"}], "table": [{"cells": {"fill": {"color": "#EBF0F8"}, "line": {"color": "white"}}, "header": {"fill": {"color": "#C8D4E3"}, "line": {"color": "white"}}, "type": "table"}], "barpolar": [{"marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "barpolar"}], "pie": [{"automargin": true, "type": "pie"}]}, "layout": {"autotypenumbers": "strict", "colorway": ["#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A", "#19d3f3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"], "font": {"color": "#2a3f5f"}, "hovermode": "closest", "hoverlabel": {"align": "left"}, "paper_bgcolor": "white", "plot_bgcolor": "#E5ECF6", "polar": {"bgcolor": "#E5ECF6", "angularaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "radialaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "ternary": {"bgcolor": "#E5ECF6", "aaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "baxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "caxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "coloraxis": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "colorscale": {"sequential": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "sequentialminus": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "diverging": [[0, "#8e0152"], [0.1, "#c51b7d"], [0.2, "#de77ae"], [0.3, "#f1b6da"], [0.4, "#fde0ef"], [0.5, "#f7f7f7"], [0.6, "#e6f5d0"], [0.7, "#b8e186"], [0.8, "#7fbc41"], [0.9, "#4d9221"], [1, "#276419"]]}, "xaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "yaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "scene": {"xaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "yaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "zaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}}, "shapedefaults": {"line": {"color": "#2a3f5f"}}, "annotationdefaults": {"arrowcolor": "#2a3f5f", "arrowhead": 0, "arrowwidth": 1}, "geo": {"bgcolor": "white", "landcolor": "#E5ECF6", "subunitcolor": "white", "showland": true, "showlakes": true, "lakecolor": "white"}, "title": {"x": 0.05}, "mapbox": {"style": "light"}}}, "title": {"font": {"size": 18}, "text": "nMDS 2D - \uc6d0\ub8cc(Raw Material)"}, "xaxis": {"title": {"text": "nMDS1"}}, "yaxis": {"title": {"text": "nMDS2"}}, "height": 450}}; Plotly.newPlot("chart_2d_raw_material", d.data, d.layout); })()</script>
+<script>(function() { var d = {"data": [{"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(141,211,199)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Sempio", "text": ["SOY-1", "SOY-N+", "SOY-L", "SOY-P", "WHEAT-1", "PEA-1", "RICE-1", "SOY-BIO", "SOY-BIO N50", "WHEAT-BIO", "PEA-BIO", "RICE-BIO", "Fish Collagen", "PPR Type2", "PPR Type3", "PPR Type4"], "x": [-0.22493681013335887, 0.03791373121232165, -0.09952738832631786, -0.5136982942918118, 0.3367498992284293, 0.45297197488106805, 0.3338862381946059, -0.17068515955541552, 0.14702657623224452, 0.3257889762417028, 0.5333963005617114, 0.3498902505754177, 0.0010204083567753846, 0.15976047408496305, -0.061612915899441345, 0.15095168904298245], "y": [-0.1667019118930695, -0.15036757406638024, -0.11442749982971581, -0.1984864904128071, -0.3925758981784837, -0.08432315402814472, -0.04880492656454684, -0.17646422138392076, -0.09167521691831483, -0.3308719648115345, -0.1073224884989645, -0.06538692685964112, -0.40640539152168126, -0.32144392226061036, -0.13696589804198417, -0.36598486846561823], "z": [0.060761585850759546, 0.09764303551333843, 0.14299587671234293, -0.0782046004815663, 0.3251850063804321, 0.13254558718622744, 0.14345336486797708, 0.14795090548886122, 0.1534230616298228, 0.4031130561911383, 0.15266169065218135, 0.19429056479231688, -0.8375932084988177, -0.6774739114225146, 0.0847471326850234, -0.5584208101481934], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(255,255,179)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "China", "text": ["Pork peptoneC1", "Pork peptoneC3"], "x": [-0.003518778012389475, -0.028142188608586458], "y": [-0.4081708546457289, -0.3997655061271362], "z": [-1.1261884918935618, -1.081513739094539], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(190,186,218)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Solabia", "text": ["Pork peptoneSol", "Solabia soypeptone-F", "Solabia papaic soy peptone"], "x": [0.06845964594687091, -0.28570316292586834, -0.5625650036903203], "y": [-0.45337370543889743, 0.3063505874617913, 0.43875165013315404], "z": [-0.5184413196275869, -0.1033648551483057, -0.3619625595088441], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(251,128,114)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "LPS", "text": ["LPS Soy peptone", "LPS Tryptone", "LPS Yeast extract"], "x": [-0.7827290121506078, 0.38204716717495735, 0.35616076838849625], "y": [0.3435354387592779, -0.19338647131634754, 0.43451224821856677], "z": [-0.17623128510266195, 0.013550011264238014, 0.27329044044113904], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(128,177,211)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Himedia", "text": ["Himedia No.1", "Himedia No.2"], "x": [0.09581780311683895, 0.09994022634007566], "y": [-0.28379738475921545, -0.18181498134659912], "z": [0.24060065065574104, 0.18905800482398943], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(253,180,98)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Thermofisher Gibco", "text": ["Gibco SOY100", "Gibco Soytone", "Bacto Casitone"], "x": [-0.2992014565686695, -0.2625185795991649, 0.659030777701176], "y": [-0.1049193252744743, -0.15384607946290144, 0.29441577456868545], "z": [0.4378301711591332, 0.2704449436900925, -0.10012359221945608], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(179,222,105)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Denmark", "text": ["Pork peptoneD"], "x": [-0.1513672406330901], "y": [-0.2765473502506467], "z": [-0.3686609444604614], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(252,205,229)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Solkoreagent", "text": ["Solko soypeptone"], "x": [-0.38452104131595377], "y": [0.24995113479386144], "z": [0.08364123618819949], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(217,217,217)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Procelys", "text": ["NuCel 816 PW", "NuCel 751 MG"], "x": [0.18805584272115156, 0.298316387225372], "y": [0.43066557774131664, 0.3513612640568421], "z": [0.30941507779527283, 0.29008501690761823], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(188,128,189)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Lallemand", "text": ["FNI100", "FNI800"], "x": [0.2948858375513411, -0.17851839791972018], "y": [0.5102321636417713, 0.7781096537234191], "z": [0.5911732782923492, 0.4901405284645869], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(204,235,197)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "DSM", "text": ["Gistex LS Ferm"], "x": [0.15144854125820767], "y": [0.5530834857784912], "z": [0.44739919364405234], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(255,237,111)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "BD", "text": ["Bacto Yeast extract", "Hanmi Lot1", "Hanmi Lot2", "Yeast extract", "Beef extract"], "x": [0.3666156827566082, 0.29873625920185953, 0.31618427252600967, 0.43763133703533036, -0.1565008771652695], "y": [0.42099217490122515, 0.43784894941334024, 0.4599952532479591, 0.48570648880658257, 0.24946312066824827], "z": [0.3843283664295345, 0.39214371998081937, 0.424392221024762, 0.17770841136781967, -1.0367957484544887], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(141,211,199)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "By_Product", "text": ["Malt Byproduct", "Yeast Byproduct", "Mealworm Byproduct", "Cotton Byproduct(Ind)", "Cotton Byproduct(Afr)", "Rice bran"], "x": [-0.6131868866527219, 0.20469007745916437, 0.42433062383916836, -0.4134068893858771, -0.23114371983981427, -0.6779853994426813], "y": [-1.0592573915540617, -0.03888149749935714, -0.04071491231942249, -0.5770684942999973, -0.5197027887680692, -1.3863160708139939], "z": [0.13085378081895746, 0.34073311013502483, 0.42391424646147563, 0.040636894532703804, 0.12376238481622978, 0.24410656860674176], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(255,255,179)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Tatua", "text": ["Tatua HSP349"], "x": [-0.6178685812714624], "y": [0.30861499168450485], "z": [-0.30734005898443484], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(190,186,218)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Kerry", "text": ["Kerry Hy-soy kips", "Kerry kosher ips", "Kerry amysoy"], "x": [-0.5162359703503039, -0.5002573132573304, 0.8135228194725749], "y": [0.2895703256412126, 0.4413087848623551, 0.34374796176345507], "z": [-0.22959417382842984, -0.3267216356714191, 0.11715221310768806], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(251,128,114)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Angel Yeast", "text": ["Angel FP410", "YP180"], "x": [-0.297142638160929, -0.25225688317032013], "y": [0.249684816048447, 0.8578693216977595], "z": [-0.06250813613395431, -0.5239922678793542], "type": "scatter3d"}], "layout": {"template": {"data": {"histogram2dcontour": [{"type": "histogram2dcontour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "choropleth": [{"type": "choropleth", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "histogram2d": [{"type": "histogram2d", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "heatmap": [{"type": "heatmap", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "contourcarpet": [{"type": "contourcarpet", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "contour": [{"type": "contour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "surface": [{"type": "surface", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "mesh3d": [{"type": "mesh3d", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "scatter": [{"fillpattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}, "type": "scatter"}], "parcoords": [{"type": "parcoords", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolargl": [{"type": "scatterpolargl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "bar": [{"error_x": {"color": "#2a3f5f"}, "error_y": {"color": "#2a3f5f"}, "marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "bar"}], "scattergeo": [{"type": "scattergeo", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolar": [{"type": "scatterpolar", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "histogram": [{"marker": {"pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "histogram"}], "scattergl": [{"type": "scattergl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatter3d": [{"type": "scatter3d", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermap": [{"type": "scattermap", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermapbox": [{"type": "scattermapbox", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterternary": [{"type": "scatterternary", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattercarpet": [{"type": "scattercarpet", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "carpet": [{"aaxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "baxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "type": "carpet"}], "table": [{"cells": {"fill": {"color": "#EBF0F8"}, "line": {"color": "white"}}, "header": {"fill": {"color": "#C8D4E3"}, "line": {"color": "white"}}, "type": "table"}], "barpolar": [{"marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "barpolar"}], "pie": [{"automargin": true, "type": "pie"}]}, "layout": {"autotypenumbers": "strict", "colorway": ["#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A", "#19d3f3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"], "font": {"color": "#2a3f5f"}, "hovermode": "closest", "hoverlabel": {"align": "left"}, "paper_bgcolor": "white", "plot_bgcolor": "#E5ECF6", "polar": {"bgcolor": "#E5ECF6", "angularaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "radialaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "ternary": {"bgcolor": "#E5ECF6", "aaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "baxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "caxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "coloraxis": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "colorscale": {"sequential": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "sequentialminus": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "diverging": [[0, "#8e0152"], [0.1, "#c51b7d"], [0.2, "#de77ae"], [0.3, "#f1b6da"], [0.4, "#fde0ef"], [0.5, "#f7f7f7"], [0.6, "#e6f5d0"], [0.7, "#b8e186"], [0.8, "#7fbc41"], [0.9, "#4d9221"], [1, "#276419"]]}, "xaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "yaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "scene": {"xaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "yaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "zaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}}, "shapedefaults": {"line": {"color": "#2a3f5f"}}, "annotationdefaults": {"arrowcolor": "#2a3f5f", "arrowhead": 0, "arrowwidth": 1}, "geo": {"bgcolor": "white", "landcolor": "#E5ECF6", "subunitcolor": "white", "showland": true, "showlakes": true, "lakecolor": "white"}, "title": {"x": 0.05}, "mapbox": {"style": "light"}}}, "title": {"font": {"size": 18}, "text": "nMDS 3D - \uc81c\uc870\uc0ac(Manufacturer)"}, "margin": {"l": 0, "r": 0, "t": 50, "b": 0}, "legend": {"title": {"text": "\uc81c\uc870\uc0ac(Manufacturer)"}}, "scene": {"xaxis": {"title": {"text": "nMDS1"}}, "yaxis": {"title": {"text": "nMDS2"}}, "zaxis": {"title": {"text": "nMDS3"}}}, "height": 550}}; Plotly.newPlot("chart_3d_manufacturer", d.data, d.layout); })()</script>
+<script>(function() { var d = {"data": [{"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(141,211,199)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Sempio", "text": ["SOY-1", "SOY-N+", "SOY-L", "SOY-P", "WHEAT-1", "PEA-1", "RICE-1", "SOY-BIO", "SOY-BIO N50", "WHEAT-BIO", "PEA-BIO", "RICE-BIO", "Fish Collagen", "PPR Type2", "PPR Type3", "PPR Type4"], "x": [-0.14352777717990778, -0.09497416216568703, -0.054936765787935354, -0.1803970330049682, -0.25023811502081067, 0.016089163436947416, 0.035542709221754544, -0.14445656540384383, -0.014654803809996942, -0.190448801480668, 0.0037770853916344114, 0.04766807380173341, -0.6507097052597637, -0.5530785544700859, -0.09460162899520913, -0.5547700252660419], "y": [-0.06724103967846133, 0.1304653552894853, 0.054435000042412446, -0.3572159466432475, 0.5165117989106092, 0.4654598085355059, 0.3586622994218794, 0.020754568387132206, 0.22168190695175483, 0.5404884383463758, 0.5531778929032307, 0.38871010969176356, -0.6955859554397874, -0.49443370619353905, 0.05928316909481747, -0.3368608730813603], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(255,255,179)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "China", "text": ["Pork peptoneC1", "Pork peptoneC3"], "x": [-0.8283437165814668, -0.7957880095031958], "y": [-0.9936970544790604, -0.9542539034760045], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(190,186,218)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Solabia", "text": ["Pork peptoneSol", "Solabia soypeptone-F", "Solabia papaic soy peptone"], "x": [-0.6047262274517399, 0.2599472874974494, 0.3634560355215125], "y": [-0.29612305875231404, -0.30144836952510357, -0.6919743593785892], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(251,128,114)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "LPS", "text": ["LPS Soy peptone", "LPS Tryptone", "LPS Yeast extract"], "x": [0.2855983403671819, -0.12987147838027488, 0.5049207061826811], "y": [-0.7971378810656629, 0.3902263428025351, 0.3700879589786404], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(128,177,211)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Himedia", "text": ["Himedia No.1", "Himedia No.2"], "x": [-0.176891299200333, -0.08587355358936256], "y": [0.2535577966304922, 0.20996933569582577], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(253,180,98)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Thermofisher Gibco", "text": ["Gibco SOY100", "Gibco Soytone", "Bacto Casitone"], "x": [0.03897891247139274, -0.11035074544260273, 0.3025364646341041], "y": [-0.04648765583595613, -0.011984836107070906, 0.6978425689029557], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(179,222,105)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Denmark", "text": ["Pork peptoneD"], "x": [-0.3454649452329643], "y": [-0.2847005069685349], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(252,205,229)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Solkoreagent", "text": ["Solko soypeptone"], "x": [0.30140628002681635], "y": [-0.24850517982531076], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(217,217,217)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Procelys", "text": ["NuCel 816 PW", "NuCel 751 MG"], "x": [0.5038748765386041, 0.43729917086425796], "y": [0.24873661862589408, 0.3262344876970003], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(188,128,189)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Lallemand", "text": ["FNI100", "FNI800"], "x": [0.7128961263747872, 0.9427555875188086], "y": [0.4544171102130125, 0.00353569579910235], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(204,235,197)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "DSM", "text": ["Gistex LS Ferm"], "x": [0.6747803587798088], "y": [0.2521808789732306], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(255,237,111)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "BD", "text": ["Bacto Yeast extract", "Hanmi Lot1", "Hanmi Lot2", "Yeast extract", "Beef extract"], "x": [0.549119705908943, 0.5593526155782238, 0.5886635393151124, 0.5396671913919951, -0.1450703936170514], "y": [0.39367391302893556, 0.34113073230552293, 0.3661709715745734, 0.4304348389062189, -1.1322595275739773], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(141,211,199)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "By_Product", "text": ["Malt Byproduct", "Yeast Byproduct", "Mealworm Byproduct", "Cotton Byproduct(Ind)", "Cotton Byproduct(Afr)", "Rice bran"], "x": [-1.2566412882304154, 0.09650231919048684, 0.12344104344004722, -0.661702262053226, -0.5072677505385533, -1.6229410263450688], "y": [0.2119494678639417, 0.32948220644493237, 0.5524958639085088, 0.03950677976131904, 0.12689230672580964, 0.42104403985780925], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(255,255,179)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Tatua", "text": ["Tatua HSP349"], "x": [0.25324470799566906], "y": [-0.671633884419155], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(190,186,218)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Kerry", "text": ["Kerry Hy-soy kips", "Kerry kosher ips", "Kerry amysoy"], "x": [0.24564000742100453, 0.3564299427517639, 0.4483711034361536], "y": [-0.5321685169950697, -0.615843276526701, 0.8186451456088264], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(251,128,114)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Angel Yeast", "text": ["Angel FP410", "YP180"], "x": [0.2290857172932627, 0.7766815616590366], "y": [-0.2616401861338876, -0.7566496897812595], "type": "scatter"}], "layout": {"template": {"data": {"histogram2dcontour": [{"type": "histogram2dcontour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "choropleth": [{"type": "choropleth", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "histogram2d": [{"type": "histogram2d", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "heatmap": [{"type": "heatmap", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "contourcarpet": [{"type": "contourcarpet", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "contour": [{"type": "contour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "surface": [{"type": "surface", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "mesh3d": [{"type": "mesh3d", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "scatter": [{"fillpattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}, "type": "scatter"}], "parcoords": [{"type": "parcoords", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolargl": [{"type": "scatterpolargl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "bar": [{"error_x": {"color": "#2a3f5f"}, "error_y": {"color": "#2a3f5f"}, "marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "bar"}], "scattergeo": [{"type": "scattergeo", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolar": [{"type": "scatterpolar", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "histogram": [{"marker": {"pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "histogram"}], "scattergl": [{"type": "scattergl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatter3d": [{"type": "scatter3d", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermap": [{"type": "scattermap", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermapbox": [{"type": "scattermapbox", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterternary": [{"type": "scatterternary", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattercarpet": [{"type": "scattercarpet", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "carpet": [{"aaxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "baxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "type": "carpet"}], "table": [{"cells": {"fill": {"color": "#EBF0F8"}, "line": {"color": "white"}}, "header": {"fill": {"color": "#C8D4E3"}, "line": {"color": "white"}}, "type": "table"}], "barpolar": [{"marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "barpolar"}], "pie": [{"automargin": true, "type": "pie"}]}, "layout": {"autotypenumbers": "strict", "colorway": ["#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A", "#19d3f3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"], "font": {"color": "#2a3f5f"}, "hovermode": "closest", "hoverlabel": {"align": "left"}, "paper_bgcolor": "white", "plot_bgcolor": "#E5ECF6", "polar": {"bgcolor": "#E5ECF6", "angularaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "radialaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "ternary": {"bgcolor": "#E5ECF6", "aaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "baxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "caxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "coloraxis": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "colorscale": {"sequential": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "sequentialminus": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "diverging": [[0, "#8e0152"], [0.1, "#c51b7d"], [0.2, "#de77ae"], [0.3, "#f1b6da"], [0.4, "#fde0ef"], [0.5, "#f7f7f7"], [0.6, "#e6f5d0"], [0.7, "#b8e186"], [0.8, "#7fbc41"], [0.9, "#4d9221"], [1, "#276419"]]}, "xaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "yaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "scene": {"xaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "yaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "zaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}}, "shapedefaults": {"line": {"color": "#2a3f5f"}}, "annotationdefaults": {"arrowcolor": "#2a3f5f", "arrowhead": 0, "arrowwidth": 1}, "geo": {"bgcolor": "white", "landcolor": "#E5ECF6", "subunitcolor": "white", "showland": true, "showlakes": true, "lakecolor": "white"}, "title": {"x": 0.05}, "mapbox": {"style": "light"}}}, "title": {"font": {"size": 18}, "text": "nMDS 2D - \uc81c\uc870\uc0ac(Manufacturer)"}, "xaxis": {"title": {"text": "nMDS1"}}, "yaxis": {"title": {"text": "nMDS2"}}, "height": 450}}; Plotly.newPlot("chart_2d_manufacturer", d.data, d.layout); })()</script>
+<script>(function() { var d = {"data": [{"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(141,211,199)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Peptone", "text": ["SOY-1", "SOY-N+", "SOY-L", "SOY-P", "WHEAT-1", "PEA-1", "RICE-1", "Pork peptoneC1", "Pork peptoneC3", "Pork peptoneSol", "PPR Type2", "PPR Type3", "PPR Type4", "LPS Soy peptone", "Himedia No.1", "Himedia No.2", "Gibco SOY100", "Gibco Soytone", "Pork peptoneD", "Solko soypeptone", "Tatua HSP349", "Solabia soypeptone-F", "Solabia papaic soy peptone", "Kerry Hy-soy kips", "Kerry kosher ips", "Kerry amysoy", "Angel FP410", "YP180"], "x": [-0.22493681013335887, 0.03791373121232165, -0.09952738832631786, -0.5136982942918118, 0.3367498992284293, 0.45297197488106805, 0.3338862381946059, -0.003518778012389475, -0.028142188608586458, 0.06845964594687091, 0.15976047408496305, -0.061612915899441345, 0.15095168904298245, -0.7827290121506078, 0.09581780311683895, 0.09994022634007566, -0.2992014565686695, -0.2625185795991649, -0.1513672406330901, -0.38452104131595377, -0.6178685812714624, -0.28570316292586834, -0.5625650036903203, -0.5162359703503039, -0.5002573132573304, 0.8135228194725749, -0.297142638160929, -0.25225688317032013], "y": [-0.1667019118930695, -0.15036757406638024, -0.11442749982971581, -0.1984864904128071, -0.3925758981784837, -0.08432315402814472, -0.04880492656454684, -0.4081708546457289, -0.3997655061271362, -0.45337370543889743, -0.32144392226061036, -0.13696589804198417, -0.36598486846561823, 0.3435354387592779, -0.28379738475921545, -0.18181498134659912, -0.1049193252744743, -0.15384607946290144, -0.2765473502506467, 0.24995113479386144, 0.30861499168450485, 0.3063505874617913, 0.43875165013315404, 0.2895703256412126, 0.4413087848623551, 0.34374796176345507, 0.249684816048447, 0.8578693216977595], "z": [0.060761585850759546, 0.09764303551333843, 0.14299587671234293, -0.0782046004815663, 0.3251850063804321, 0.13254558718622744, 0.14345336486797708, -1.1261884918935618, -1.081513739094539, -0.5184413196275869, -0.6774739114225146, 0.0847471326850234, -0.5584208101481934, -0.17623128510266195, 0.24060065065574104, 0.18905800482398943, 0.4378301711591332, 0.2704449436900925, -0.3686609444604614, 0.08364123618819949, -0.30734005898443484, -0.1033648551483057, -0.3619625595088441, -0.22959417382842984, -0.3267216356714191, 0.11715221310768806, -0.06250813613395431, -0.5239922678793542], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(255,255,179)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Bio Peptone", "text": ["SOY-BIO", "SOY-BIO N50", "WHEAT-BIO", "PEA-BIO", "RICE-BIO"], "x": [-0.17068515955541552, 0.14702657623224452, 0.3257889762417028, 0.5333963005617114, 0.3498902505754177], "y": [-0.17646422138392076, -0.09167521691831483, -0.3308719648115345, -0.1073224884989645, -0.06538692685964112], "z": [0.14795090548886122, 0.1534230616298228, 0.4031130561911383, 0.15266169065218135, 0.19429056479231688], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(190,186,218)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Collagen", "text": ["Fish Collagen"], "x": [0.0010204083567753846], "y": [-0.40640539152168126], "z": [-0.8375932084988177], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(251,128,114)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Tryptone", "text": ["LPS Tryptone", "Bacto Casitone"], "x": [0.38204716717495735, 0.659030777701176], "y": [-0.19338647131634754, 0.29441577456868545], "z": [0.013550011264238014, -0.10012359221945608], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(128,177,211)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Yeast extract", "text": ["NuCel 816 PW", "NuCel 751 MG", "LPS Yeast extract", "FNI100", "FNI800", "Gistex LS Ferm", "Bacto Yeast extract", "Hanmi Lot1", "Hanmi Lot2", "Yeast extract"], "x": [0.18805584272115156, 0.298316387225372, 0.35616076838849625, 0.2948858375513411, -0.17851839791972018, 0.15144854125820767, 0.3666156827566082, 0.29873625920185953, 0.31618427252600967, 0.43763133703533036], "y": [0.43066557774131664, 0.3513612640568421, 0.43451224821856677, 0.5102321636417713, 0.7781096537234191, 0.5530834857784912, 0.42099217490122515, 0.43784894941334024, 0.4599952532479591, 0.48570648880658257], "z": [0.30941507779527283, 0.29008501690761823, 0.27329044044113904, 0.5911732782923492, 0.4901405284645869, 0.44739919364405234, 0.3843283664295345, 0.39214371998081937, 0.424392221024762, 0.17770841136781967], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(253,180,98)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "By_Product Origin", "text": ["Malt Byproduct", "Yeast Byproduct", "Mealworm Byproduct", "Cotton Byproduct(Ind)", "Cotton Byproduct(Afr)", "Rice bran"], "x": [-0.6131868866527219, 0.20469007745916437, 0.42433062383916836, -0.4134068893858771, -0.23114371983981427, -0.6779853994426813], "y": [-1.0592573915540617, -0.03888149749935714, -0.04071491231942249, -0.5770684942999973, -0.5197027887680692, -1.3863160708139939], "z": [0.13085378081895746, 0.34073311013502483, 0.42391424646147563, 0.040636894532703804, 0.12376238481622978, 0.24410656860674176], "type": "scatter3d"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<br>nMDS3: %{z:.2f}<extra></extra>", "marker": {"color": "rgb(179,222,105)", "opacity": 0.85, "size": 5}, "mode": "markers", "name": "Beef extract", "text": ["Beef extract"], "x": [-0.1565008771652695], "y": [0.24946312066824827], "z": [-1.0367957484544887], "type": "scatter3d"}], "layout": {"template": {"data": {"histogram2dcontour": [{"type": "histogram2dcontour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "choropleth": [{"type": "choropleth", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "histogram2d": [{"type": "histogram2d", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "heatmap": [{"type": "heatmap", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "contourcarpet": [{"type": "contourcarpet", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "contour": [{"type": "contour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "surface": [{"type": "surface", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "mesh3d": [{"type": "mesh3d", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "scatter": [{"fillpattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}, "type": "scatter"}], "parcoords": [{"type": "parcoords", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolargl": [{"type": "scatterpolargl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "bar": [{"error_x": {"color": "#2a3f5f"}, "error_y": {"color": "#2a3f5f"}, "marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "bar"}], "scattergeo": [{"type": "scattergeo", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolar": [{"type": "scatterpolar", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "histogram": [{"marker": {"pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "histogram"}], "scattergl": [{"type": "scattergl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatter3d": [{"type": "scatter3d", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermap": [{"type": "scattermap", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermapbox": [{"type": "scattermapbox", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterternary": [{"type": "scatterternary", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattercarpet": [{"type": "scattercarpet", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "carpet": [{"aaxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "baxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "type": "carpet"}], "table": [{"cells": {"fill": {"color": "#EBF0F8"}, "line": {"color": "white"}}, "header": {"fill": {"color": "#C8D4E3"}, "line": {"color": "white"}}, "type": "table"}], "barpolar": [{"marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "barpolar"}], "pie": [{"automargin": true, "type": "pie"}]}, "layout": {"autotypenumbers": "strict", "colorway": ["#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A", "#19d3f3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"], "font": {"color": "#2a3f5f"}, "hovermode": "closest", "hoverlabel": {"align": "left"}, "paper_bgcolor": "white", "plot_bgcolor": "#E5ECF6", "polar": {"bgcolor": "#E5ECF6", "angularaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "radialaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "ternary": {"bgcolor": "#E5ECF6", "aaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "baxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "caxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "coloraxis": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "colorscale": {"sequential": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "sequentialminus": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "diverging": [[0, "#8e0152"], [0.1, "#c51b7d"], [0.2, "#de77ae"], [0.3, "#f1b6da"], [0.4, "#fde0ef"], [0.5, "#f7f7f7"], [0.6, "#e6f5d0"], [0.7, "#b8e186"], [0.8, "#7fbc41"], [0.9, "#4d9221"], [1, "#276419"]]}, "xaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "yaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "scene": {"xaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "yaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "zaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}}, "shapedefaults": {"line": {"color": "#2a3f5f"}}, "annotationdefaults": {"arrowcolor": "#2a3f5f", "arrowhead": 0, "arrowwidth": 1}, "geo": {"bgcolor": "white", "landcolor": "#E5ECF6", "subunitcolor": "white", "showland": true, "showlakes": true, "lakecolor": "white"}, "title": {"x": 0.05}, "mapbox": {"style": "light"}}}, "title": {"font": {"size": 18}, "text": "nMDS 3D - \uc81c\ud488\uc720\ud615(Material Type)"}, "margin": {"l": 0, "r": 0, "t": 50, "b": 0}, "legend": {"title": {"text": "\uc81c\ud488\uc720\ud615(Material Type)"}}, "scene": {"xaxis": {"title": {"text": "nMDS1"}}, "yaxis": {"title": {"text": "nMDS2"}}, "zaxis": {"title": {"text": "nMDS3"}}}, "height": 550}}; Plotly.newPlot("chart_3d_material_type", d.data, d.layout); })()</script>
+<script>(function() { var d = {"data": [{"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(141,211,199)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Peptone", "text": ["SOY-1", "SOY-N+", "SOY-L", "SOY-P", "WHEAT-1", "PEA-1", "RICE-1", "Pork peptoneC1", "Pork peptoneC3", "Pork peptoneSol", "PPR Type2", "PPR Type3", "PPR Type4", "LPS Soy peptone", "Himedia No.1", "Himedia No.2", "Gibco SOY100", "Gibco Soytone", "Pork peptoneD", "Solko soypeptone", "Tatua HSP349", "Solabia soypeptone-F", "Solabia papaic soy peptone", "Kerry Hy-soy kips", "Kerry kosher ips", "Kerry amysoy", "Angel FP410", "YP180"], "x": [-0.14352777717990778, -0.09497416216568703, -0.054936765787935354, -0.1803970330049682, -0.25023811502081067, 0.016089163436947416, 0.035542709221754544, -0.8283437165814668, -0.7957880095031958, -0.6047262274517399, -0.5530785544700859, -0.09460162899520913, -0.5547700252660419, 0.2855983403671819, -0.176891299200333, -0.08587355358936256, 0.03897891247139274, -0.11035074544260273, -0.3454649452329643, 0.30140628002681635, 0.25324470799566906, 0.2599472874974494, 0.3634560355215125, 0.24564000742100453, 0.3564299427517639, 0.4483711034361536, 0.2290857172932627, 0.7766815616590366], "y": [-0.06724103967846133, 0.1304653552894853, 0.054435000042412446, -0.3572159466432475, 0.5165117989106092, 0.4654598085355059, 0.3586622994218794, -0.9936970544790604, -0.9542539034760045, -0.29612305875231404, -0.49443370619353905, 0.05928316909481747, -0.3368608730813603, -0.7971378810656629, 0.2535577966304922, 0.20996933569582577, -0.04648765583595613, -0.011984836107070906, -0.2847005069685349, -0.24850517982531076, -0.671633884419155, -0.30144836952510357, -0.6919743593785892, -0.5321685169950697, -0.615843276526701, 0.8186451456088264, -0.2616401861338876, -0.7566496897812595], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(255,255,179)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Bio Peptone", "text": ["SOY-BIO", "SOY-BIO N50", "WHEAT-BIO", "PEA-BIO", "RICE-BIO"], "x": [-0.14445656540384383, -0.014654803809996942, -0.190448801480668, 0.0037770853916344114, 0.04766807380173341], "y": [0.020754568387132206, 0.22168190695175483, 0.5404884383463758, 0.5531778929032307, 0.38871010969176356], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(190,186,218)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Collagen", "text": ["Fish Collagen"], "x": [-0.6507097052597637], "y": [-0.6955859554397874], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(251,128,114)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Tryptone", "text": ["LPS Tryptone", "Bacto Casitone"], "x": [-0.12987147838027488, 0.3025364646341041], "y": [0.3902263428025351, 0.6978425689029557], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(128,177,211)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Yeast extract", "text": ["NuCel 816 PW", "NuCel 751 MG", "LPS Yeast extract", "FNI100", "FNI800", "Gistex LS Ferm", "Bacto Yeast extract", "Hanmi Lot1", "Hanmi Lot2", "Yeast extract"], "x": [0.5038748765386041, 0.43729917086425796, 0.5049207061826811, 0.7128961263747872, 0.9427555875188086, 0.6747803587798088, 0.549119705908943, 0.5593526155782238, 0.5886635393151124, 0.5396671913919951], "y": [0.24873661862589408, 0.3262344876970003, 0.3700879589786404, 0.4544171102130125, 0.00353569579910235, 0.2521808789732306, 0.39367391302893556, 0.34113073230552293, 0.3661709715745734, 0.4304348389062189], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(253,180,98)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "By_Product Origin", "text": ["Malt Byproduct", "Yeast Byproduct", "Mealworm Byproduct", "Cotton Byproduct(Ind)", "Cotton Byproduct(Afr)", "Rice bran"], "x": [-1.2566412882304154, 0.09650231919048684, 0.12344104344004722, -0.661702262053226, -0.5072677505385533, -1.6229410263450688], "y": [0.2119494678639417, 0.32948220644493237, 0.5524958639085088, 0.03950677976131904, 0.12689230672580964, 0.42104403985780925], "type": "scatter"}, {"hovertemplate": "<b>%{text}</b><br>nMDS1: %{x:.2f}<br>nMDS2: %{y:.2f}<extra></extra>", "marker": {"color": "rgb(179,222,105)", "opacity": 0.8, "size": 9}, "mode": "markers", "name": "Beef extract", "text": ["Beef extract"], "x": [-0.1450703936170514], "y": [-1.1322595275739773], "type": "scatter"}], "layout": {"template": {"data": {"histogram2dcontour": [{"type": "histogram2dcontour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "choropleth": [{"type": "choropleth", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "histogram2d": [{"type": "histogram2d", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "heatmap": [{"type": "heatmap", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "contourcarpet": [{"type": "contourcarpet", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "contour": [{"type": "contour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "surface": [{"type": "surface", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "mesh3d": [{"type": "mesh3d", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "scatter": [{"fillpattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}, "type": "scatter"}], "parcoords": [{"type": "parcoords", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolargl": [{"type": "scatterpolargl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "bar": [{"error_x": {"color": "#2a3f5f"}, "error_y": {"color": "#2a3f5f"}, "marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "bar"}], "scattergeo": [{"type": "scattergeo", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolar": [{"type": "scatterpolar", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "histogram": [{"marker": {"pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "histogram"}], "scattergl": [{"type": "scattergl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatter3d": [{"type": "scatter3d", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermap": [{"type": "scattermap", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermapbox": [{"type": "scattermapbox", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterternary": [{"type": "scatterternary", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattercarpet": [{"type": "scattercarpet", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "carpet": [{"aaxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "baxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "type": "carpet"}], "table": [{"cells": {"fill": {"color": "#EBF0F8"}, "line": {"color": "white"}}, "header": {"fill": {"color": "#C8D4E3"}, "line": {"color": "white"}}, "type": "table"}], "barpolar": [{"marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "barpolar"}], "pie": [{"automargin": true, "type": "pie"}]}, "layout": {"autotypenumbers": "strict", "colorway": ["#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A", "#19d3f3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"], "font": {"color": "#2a3f5f"}, "hovermode": "closest", "hoverlabel": {"align": "left"}, "paper_bgcolor": "white", "plot_bgcolor": "#E5ECF6", "polar": {"bgcolor": "#E5ECF6", "angularaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "radialaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "ternary": {"bgcolor": "#E5ECF6", "aaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "baxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "caxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "coloraxis": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "colorscale": {"sequential": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "sequentialminus": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "diverging": [[0, "#8e0152"], [0.1, "#c51b7d"], [0.2, "#de77ae"], [0.3, "#f1b6da"], [0.4, "#fde0ef"], [0.5, "#f7f7f7"], [0.6, "#e6f5d0"], [0.7, "#b8e186"], [0.8, "#7fbc41"], [0.9, "#4d9221"], [1, "#276419"]]}, "xaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "yaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "scene": {"xaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "yaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "zaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}}, "shapedefaults": {"line": {"color": "#2a3f5f"}}, "annotationdefaults": {"arrowcolor": "#2a3f5f", "arrowhead": 0, "arrowwidth": 1}, "geo": {"bgcolor": "white", "landcolor": "#E5ECF6", "subunitcolor": "white", "showland": true, "showlakes": true, "lakecolor": "white"}, "title": {"x": 0.05}, "mapbox": {"style": "light"}}}, "title": {"font": {"size": 18}, "text": "nMDS 2D - \uc81c\ud488\uc720\ud615(Material Type)"}, "xaxis": {"title": {"text": "nMDS1"}}, "yaxis": {"title": {"text": "nMDS2"}}, "height": 450}}; Plotly.newPlot("chart_2d_material_type", d.data, d.layout); })()</script>
+<script>(function() { var d = {"data": [{"marker": {"color": ["#E74C3C", "#3498DB", "#2ECC71", "#9B59B6"]}, "text": ["20", "10", "11", "12"], "textposition": "auto", "x": ["Cluster 0", "Cluster 1", "Cluster 2", "Cluster 3"], "y": [20, 10, 11, 12], "type": "bar"}], "layout": {"template": {"data": {"histogram2dcontour": [{"type": "histogram2dcontour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "choropleth": [{"type": "choropleth", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "histogram2d": [{"type": "histogram2d", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "heatmap": [{"type": "heatmap", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "contourcarpet": [{"type": "contourcarpet", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "contour": [{"type": "contour", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "surface": [{"type": "surface", "colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}], "mesh3d": [{"type": "mesh3d", "colorbar": {"outlinewidth": 0, "ticks": ""}}], "scatter": [{"fillpattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}, "type": "scatter"}], "parcoords": [{"type": "parcoords", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolargl": [{"type": "scatterpolargl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "bar": [{"error_x": {"color": "#2a3f5f"}, "error_y": {"color": "#2a3f5f"}, "marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "bar"}], "scattergeo": [{"type": "scattergeo", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterpolar": [{"type": "scatterpolar", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "histogram": [{"marker": {"pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "histogram"}], "scattergl": [{"type": "scattergl", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatter3d": [{"type": "scatter3d", "line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermap": [{"type": "scattermap", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattermapbox": [{"type": "scattermapbox", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scatterternary": [{"type": "scatterternary", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "scattercarpet": [{"type": "scattercarpet", "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}}], "carpet": [{"aaxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "baxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "type": "carpet"}], "table": [{"cells": {"fill": {"color": "#EBF0F8"}, "line": {"color": "white"}}, "header": {"fill": {"color": "#C8D4E3"}, "line": {"color": "white"}}, "type": "table"}], "barpolar": [{"marker": {"line": {"color": "#E5ECF6", "width": 0.5}, "pattern": {"fillmode": "overlay", "size": 10, "solidity": 0.2}}, "type": "barpolar"}], "pie": [{"automargin": true, "type": "pie"}]}, "layout": {"autotypenumbers": "strict", "colorway": ["#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A", "#19d3f3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"], "font": {"color": "#2a3f5f"}, "hovermode": "closest", "hoverlabel": {"align": "left"}, "paper_bgcolor": "white", "plot_bgcolor": "#E5ECF6", "polar": {"bgcolor": "#E5ECF6", "angularaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "radialaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "ternary": {"bgcolor": "#E5ECF6", "aaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "baxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "caxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "coloraxis": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "colorscale": {"sequential": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "sequentialminus": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "diverging": [[0, "#8e0152"], [0.1, "#c51b7d"], [0.2, "#de77ae"], [0.3, "#f1b6da"], [0.4, "#fde0ef"], [0.5, "#f7f7f7"], [0.6, "#e6f5d0"], [0.7, "#b8e186"], [0.8, "#7fbc41"], [0.9, "#4d9221"], [1, "#276419"]]}, "xaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "yaxis": {"gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "automargin": true, "zerolinewidth": 2}, "scene": {"xaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "yaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}, "zaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white", "gridwidth": 2}}, "shapedefaults": {"line": {"color": "#2a3f5f"}}, "annotationdefaults": {"arrowcolor": "#2a3f5f", "arrowhead": 0, "arrowwidth": 1}, "geo": {"bgcolor": "white", "landcolor": "#E5ECF6", "subunitcolor": "white", "showland": true, "showlakes": true, "lakecolor": "white"}, "title": {"x": 0.05}, "mapbox": {"style": "light"}}}, "title": {"text": "\ud074\ub7ec\uc2a4\ud130\ubcc4 \uc0d8\ud50c \ubd84\ud3ec"}, "xaxis": {"title": {"text": "\ud074\ub7ec\uc2a4\ud130"}}, "yaxis": {"title": {"text": "\uc0d8\ud50c \uc218"}}, "height": 400}}; Plotly.newPlot("chart_bar", d.data, d.layout); })()</script>
+
+
+<script>
+// 모바일 반응형 차트 최적화
+(function() {
+    function updateChartsForMobile() {
+        const isMobile = window.innerWidth <= 768;
+        const isSmallMobile = window.innerWidth <= 480;
+
+        const chartIds = [
+            'chart_3d_cluster', 'chart_2d_cluster',
+            'chart_3d_raw_material', 'chart_2d_raw_material',
+            'chart_3d_manufacturer', 'chart_2d_manufacturer',
+            'chart_3d_material_type', 'chart_2d_material_type',
+            'chart_bar'
+        ];
+
+        chartIds.forEach(function(chartId) {
+            const chartDiv = document.getElementById(chartId);
+            if (chartDiv && chartDiv.data) {
+                const newHeight = isSmallMobile ? 320 : (isMobile ? 380 : 450);
+                const newMargin = isMobile ? { l: 40, r: 20, t: 50, b: 40 } : { l: 50, r: 30, t: 50, b: 50 };
+                const newFontSize = isMobile ? 10 : 12;
+
+                const updateLayout = {
+                    height: newHeight,
+                    margin: newMargin,
+                    font: { size: newFontSize }
+                };
+
+                if (chartId.includes('3d')) {
+                    updateLayout['scene'] = {
+                        camera: {
+                            eye: isMobile ? { x: 1.8, y: 1.8, z: 1.8 } : { x: 1.25, y: 1.25, z: 1.25 }
+                        },
+                        xaxis: { title: { font: { size: newFontSize } } },
+                        yaxis: { title: { font: { size: newFontSize } } },
+                        zaxis: { title: { font: { size: newFontSize } } }
+                    };
+                }
+
+                updateLayout['legend'] = {
+                    orientation: isMobile ? 'h' : 'v',
+                    y: isMobile ? -0.25 : 1,
+                    x: isMobile ? 0.5 : 1.02,
+                    xanchor: isMobile ? 'center' : 'left',
+                    font: { size: isMobile ? 9 : 11 }
+                };
+
+                const is3DChart = chartId.includes('3d');
+                let newMarkerSize;
+                if (isMobile) {
+                    newMarkerSize = is3DChart ? 3 : 10;
+                } else {
+                    newMarkerSize = is3DChart ? 3 : 8;
+                }
+
+                Plotly.relayout(chartId, updateLayout);
+
+                chartDiv.data.forEach(function(trace, i) {
+                    if (trace.marker) {
+                        Plotly.restyle(chartId, { 'marker.size': newMarkerSize }, [i]);
+                    }
+                });
+            }
+        });
+    }
+
+    window.addEventListener('load', function() {
+        setTimeout(updateChartsForMobile, 200);
+    });
+
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(updateChartsForMobile, 250);
+    });
+
+    window.addEventListener('load', function() {
+        const chartDivs = document.querySelectorAll('[id^="chart_"]');
+        chartDivs.forEach(function(div) {
+            if (div.id) {
+                Plotly.Plots.resize(div);
+            }
+        });
+    });
+})();
+</script>
+</body>
+</html>
